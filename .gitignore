@@ -26,3 +26,5 @@ go.work.sum
 .misc
 app/cdp-profile
 app/hosts.db
+app/thughunter.db
+*.db
