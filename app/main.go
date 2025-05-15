@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"smuggr.xyz/thughunter/common/config"
+	"github.com/joho/godotenv"
 	"smuggr.xyz/thughunter/common/models"
 	"smuggr.xyz/thughunter/core/datastore"
 	"smuggr.xyz/thughunter/core/scraper"
@@ -19,8 +19,17 @@ var predefined = []string{
 }
 
 func main() {
-	config.Initialize()
-	datastore.Initialize(os.Getenv("DB_PATH"))
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
+
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "./thughunter.db"
+	}
+	datastore.Initialize(dbPath)
+
 	r := bufio.NewReader(os.Stdin)
 
 	for {
@@ -77,12 +86,32 @@ func browseData(r *bufio.Reader) {
 	var hosts []models.Host
 	datastore.DB.Find(&hosts)
 
+	fmt.Printf("Loaded %d hosts from DB\n", len(hosts))
+	if filter == "" {
+		for _, h := range hosts {
+			fmt.Printf("IP: %s, Hostname: %s, Loc: %s, Labels: %v, Services: %v\n",
+				h.IP, h.Hostname, h.Location, h.Labels, h.Services)
+		}
+		return
+	}
+
+	lowerFilter := strings.ToLower(filter)
+	matchFound := false
+	fmt.Printf("Hosts with '%s' service:\n", filter)
+
 	for _, h := range hosts {
-		if filter != "" {
-			if _, ok := h.Services[filter]; !ok {
-				continue
+		if h.Services == nil {
+			continue
+		}
+		for svc, port := range h.Services {
+			if strings.Contains(strings.ToLower(svc), lowerFilter) {
+				fmt.Printf("%s:%d (%s)\n", h.IP, port, svc)
+				matchFound = true
 			}
 		}
-		fmt.Printf("IP: %s, Hostname: %s, Loc: %s, Labels: %v, Services: %v\n", h.IP, h.Hostname, h.Location, h.Labels, h.Services)
+	}
+
+	if !matchFound {
+		fmt.Printf("No hosts found with service matching '%s'\n", filter)
 	}
 }
