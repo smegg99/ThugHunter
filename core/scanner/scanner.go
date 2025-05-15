@@ -124,13 +124,17 @@ func getConcurrencyLimit() int {
 }
 
 func writeReport(dir string, working []Result, failed []string) {
-	file, err := os.Create(filepath.Join(dir, "vnc_report.txt"))
+	now := time.Now()
+	dateStr := now.Format("2006-01-02_15-04-05")
+	path := filepath.Join(dir, fmt.Sprintf("thug_hunting_%s.txt", dateStr))
+	file, err := os.Create(path)
 	if err != nil {
 		fmt.Println("Error creating report file:", err)
 		return
 	}
 	defer file.Close()
 
+	file.WriteString(fmt.Sprintf("VNC Thug-Hunting Report — %s\n\n", now.Format("2006-01-02 15:04:05")))
 	file.WriteString("Working VNC services:\n")
 	for _, w := range working {
 		file.WriteString(fmt.Sprintf("%s:%d\n", w.IP, w.Port))
@@ -143,7 +147,9 @@ func writeReport(dir string, working []Result, failed []string) {
 }
 
 func writeHTMLSummary(dir string, results []Result) {
-	path := filepath.Join(dir, "vnc_summary.html")
+	now := time.Now()
+	dateStr := now.Format("2006-01-02_15-04-05")
+	path := filepath.Join(dir, fmt.Sprintf("thug_hunting_%s.html", dateStr))
 	f, err := os.Create(path)
 	if err != nil {
 		fmt.Println("Error writing HTML summary:", err)
@@ -166,146 +172,156 @@ func writeHTMLSummary(dir string, results []Result) {
 	f.WriteString(`<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-	<meta charset="UTF-8">
-	<title>VNC Thug-Hunter</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<style>
-		@font-face {
-			font-family: 'KilligGang';
-			src: url(data:font/woff2;base64,` + string(fontData) + `) format('woff2');
-			font-display: swap;
-		}
-		h1 {
-			font-family: 'KilligGang', sans-serif;
-			font-size: 5rem;
-			letter-spacing: 5px;
-		}
-		[data-theme="dark"] {
-			--bg: #1e1e1e;
-			--fg: #ffffff;
-			--card-bg: #2c2c2c;
-			--border: #444;
-			--topbar: #111;
-			--icon-fill: #ffffff;
-		}
-		[data-theme="light"] {
-			--bg: #ffffff;
-			--fg: #000000;
-			--card-bg: #f0f0f0;
-			--border: #ccc;
-			--topbar: #f2f2f2;
-			--icon-fill: #111111;
-		}
-		body {
-			background-color: var(--bg);
-			color: var(--fg);
-			font-family: system-ui, sans-serif;
-			margin: 0;
-		}
-		header {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			background-color: var(--topbar);
-			color: var(--fg);
-			padding: 16px;
-			flex-wrap: wrap;
-		}
-		header h1 {
-			font-size: 1.8rem;
-			margin: 0;
-		}
-		.logo {
-			height: 40px;
-			margin-right: 12px;
-			display: none;
-		}
-		[data-theme="dark"] .dark-logo {
-			display: inline;
-		}
-		[data-theme="light"] .light-logo {
-			display: inline;
-		}
-		.theme-toggle {
-			background: none;
-			border: none;
-			cursor: pointer;
-			width: 40px;
-			height: 40px;
-			padding: 0;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-		}
-		.theme-toggle svg {
-			width: 28px;
-			height: 28px;
-			fill: var(--icon-fill);
-		}
-		[data-theme="light"] .toggle-dark {
-			display: none;
-		}
-		[data-theme="dark"] .toggle-light {
-			display: none;
-		}
-		.stats {
-			padding: 12px 16px;
-			font-size: 0.95rem;
-			background: var(--card-bg);
-			border-bottom: 1px solid var(--border);
-		}
-		.grid {
-			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-			gap: 12px;
-			padding: 12px;
-		}
-		.card {
-			background: var(--card-bg);
-			border: 1px solid var(--border);
-			border-radius: 8px;
-			padding: 12px;
-			display: flex;
-			flex-direction: column;
-		}
-		.card h2 {
-			font-size: 1rem;
-			margin: 0 0 6px 0;
-			word-wrap: break-word;
-		}
-		.card p {
-			margin: 4px 0;
-			font-size: 0.85rem;
-		}
-		.card img {
-			width: 100%;
-			height: auto;
-			margin-top: auto;
-			border: 1px solid #555;
-			border-radius: 4px;
-		}
-	</style>
+<meta charset="UTF-8">
+<title>VNC Thug-Hunter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@font-face {
+	font-family: 'KilligGang';
+	src: url(data:font/woff2;base64,` + string(fontData) + `) format('woff2');
+	font-display: swap;
+}
+h1 {
+	font-family: 'KilligGang', sans-serif;
+	font-size: 5rem;
+	letter-spacing: 5px;
+}
+[data-theme="dark"] {
+	--bg: #1e1e1e;
+	--fg: #ffffff;
+	--card-bg: #2c2c2c;
+	--border: #444;
+	--topbar: #111;
+	--icon-fill: #ffffff;
+}
+[data-theme="light"] {
+	--bg: #ffffff;
+	--fg: #000000;
+	--card-bg: #f0f0f0;
+	--border: #ccc;
+	--topbar: #f2f2f2;
+	--icon-fill: #111111;
+}
+body {
+	background-color: var(--bg);
+	color: var(--fg);
+	font-family: system-ui, sans-serif;
+	margin: 0;
+}
+header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background-color: var(--topbar);
+	color: var(--fg);
+	padding: 16px;
+	flex-wrap: wrap;
+}
+header h1 {
+	font-size: 1.8rem;
+	margin: 0;
+}
+.logo {
+	height: 40px;
+	margin-right: 12px;
+	display: none;
+}
+[data-theme="dark"] .dark-logo { display: inline; }
+[data-theme="light"] .light-logo { display: inline; }
+.theme-toggle {
+	background: none;
+	border: none;
+	cursor: pointer;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.theme-toggle svg {
+	width: 28px;
+	height: 28px;
+	fill: var(--icon-fill);
+}
+[data-theme="light"] .toggle-dark { display: none; }
+[data-theme="dark"] .toggle-light { display: none; }
+.stats {
+	padding: 12px 16px;
+	font-size: 0.95rem;
+	background: var(--card-bg);
+	border-bottom: 1px solid var(--border);
+}
+.grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 12px;
+	padding: 12px;
+}
+.card {
+	background: var(--card-bg);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 12px;
+	display: flex;
+	flex-direction: column;
+}
+.card h2 {
+	font-size: 1rem;
+	margin: 0 0 6px 0;
+	word-wrap: break-word;
+}
+.card p {
+	margin: 4px 0;
+	font-size: 0.85rem;
+}
+.card img {
+	width: 100%;
+	height: auto;
+	margin-top: auto;
+	border: 1px solid #555;
+	border-radius: 4px;
+	cursor: zoom-in;
+}
+#overlay {
+	position: fixed;
+	top: 0; left: 0; right: 0; bottom: 0;
+	background-color: rgba(0, 0, 0, 0.85);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	z-index: 9999;
+}
+#overlay img {
+	max-width: 95%;
+	max-height: 95%;
+	box-shadow: 0 0 12px #000;
+	border-radius: 6px;
+	border: 2px solid white;
+}
+</style>
 </head>
 <body>
-	<header>
-		<div style="display: flex; align-items: center;">
-			<img class="logo dark-logo" src="data:image/png;base64,` + string(logoDark) + `" alt="Logo Dark">
-			<img class="logo light-logo" src="data:image/png;base64,` + string(logoLight) + `" alt="Logo Light">
-			<h1>Da Thug-Hunting Summary</h1>
-		</div>
-		<button class="theme-toggle" onclick="toggleTheme()">
-			<span class="toggle-dark">` + string(darkSVG) + `</span>
-			<span class="toggle-light">` + string(lightSVG) + `</span>
-		</button>
-	</header>
-
-	<div class="stats">
-		<strong>Total Hosts:</strong> ` + strconv.Itoa(totalHosts) + ` |
-		<strong>VNC Scanned:</strong> ` + strconv.Itoa(total) + ` |
-		<strong>Failed:</strong> ` + strconv.Itoa(failed) + `
+<header>
+	<div style="display: flex; align-items: center;">
+		<img class="logo dark-logo" src="data:image/png;base64,` + string(logoDark) + `" alt="Logo Dark">
+		<img class="logo light-logo" src="data:image/png;base64,` + string(logoLight) + `" alt="Logo Light">
+		<h1>Da Thug-Hunting Summary</h1>
 	</div>
+	<button class="theme-toggle" onclick="toggleTheme()">
+		<span class="toggle-dark">` + string(darkSVG) + `</span>
+		<span class="toggle-light">` + string(lightSVG) + `</span>
+	</button>
+</header>
 
-	<div class="grid">`)
+<div class="stats">
+	<div><strong>Report Date:</strong> ` + now.Format("2006-01-02 15:04:05") + `</div>
+	<div><strong>Total Hosts:</strong> ` + strconv.Itoa(totalHosts) + ` |
+	<strong>VNC Scanned:</strong> ` + strconv.Itoa(total) + ` |
+	<strong>Failed:</strong> ` + strconv.Itoa(failed) + `</div>
+</div>
+
+<div class="grid">`)
 
 	for _, r := range results {
 		f.WriteString(`<div class="card">`)
@@ -316,20 +332,36 @@ func writeHTMLSummary(dir string, results []Result) {
 		if r.Location != "" {
 			f.WriteString(fmt.Sprintf("<p><strong>Location:</strong> %s</p>", r.Location))
 		}
-		if len(r.Labels) > 0 {
-			f.WriteString(fmt.Sprintf("<p><strong>Labels:</strong> %s</p>", strings.Join(r.Labels, ", ")))
-		}
 		f.WriteString(fmt.Sprintf(`<img src="%s" alt="Snapshot of %s">`, r.Filename, r.IP))
 		f.WriteString(`</div>`)
 	}
 
 	f.WriteString(`</div>
+<div id="overlay" onclick="hideOverlay()">
+	<img id="overlay-img" src="" alt="Fullscreen">
+</div>
+
 <script>
-	function toggleTheme() {
-		const html = document.documentElement;
-		const current = html.getAttribute("data-theme");
-		html.setAttribute("data-theme", current === "dark" ? "light" : "dark");
-	}
+function toggleTheme() {
+	const html = document.documentElement;
+	html.setAttribute("data-theme", html.getAttribute("data-theme") === "dark" ? "light" : "dark");
+}
+function showOverlay(src) {
+	document.getElementById("overlay-img").src = src;
+	document.getElementById("overlay").style.display = "flex";
+}
+function hideOverlay() {
+	document.getElementById("overlay").style.display = "none";
+}
+document.addEventListener("keydown", e => {
+	if (e.key === "Escape") hideOverlay();
+});
+document.querySelectorAll(".card img").forEach(img => {
+	img.onclick = e => {
+		e.stopPropagation();
+		showOverlay(img.src);
+	};
+});
 </script>
 </body>
 </html>`)
