@@ -28,3 +28,4 @@ app/cdp-profile
 app/hosts.db
 app/thughunter.db
 *.db
+app/snapshots
