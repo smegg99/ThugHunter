@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"smuggr.xyz/thughunter/common/ui"
 	"smuggr.xyz/thughunter/core/datastore"
+	"smuggr.xyz/thughunter/core/scanner"
 )
 
 var predefined = []string{
@@ -20,6 +21,7 @@ var predefined = []string{
 func main() {
 	loadEnvAndInitDB()
 	r := bufio.NewReader(os.Stdin)
+	scanner.StartControlServer()
 	ui.MainMenuLoop(r, predefined)
 }
 

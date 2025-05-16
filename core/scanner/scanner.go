@@ -31,10 +31,60 @@ type Result struct {
 	Location string
 }
 
+func StartControlServer() {
+	http.HandleFunc("/open-vnc", func(w http.ResponseWriter, r *http.Request) {
+		ip := r.URL.Query().Get("ip")
+		port := r.URL.Query().Get("port")
+		if ip == "" || port == "" {
+			http.Error(w, "Missing ip or port", http.StatusBadRequest)
+			return
+		}
+
+		template := os.Getenv("LAUNCH_VNC_COMMAND")
+		if template == "" {
+			http.Error(w, "LAUNCH_VNC_COMMAND not set", http.StatusInternalServerError)
+			return
+		}
+
+		if strings.Count(template, "%s") < 2 {
+			http.Error(w, "LAUNCH_VNC_COMMAND must contain two %s placeholders (for IP and PORT)", http.StatusInternalServerError)
+			return
+		}
+
+		cmdStr := fmt.Sprintf(template, ip, port)
+		cmd := exec.Command("sh", "-c", cmdStr)
+
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+		cmd.Stdin = nil
+
+		if err := cmd.Start(); err != nil {
+			fmt.Printf("Failed to start VNC command: %v", err)
+			http.Error(w, "Failed to start VNC client", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	})
+
+	addr := os.Getenv("CONTROL_SERVER_ADDR")
+	if addr == "" {
+		addr = "127.0.0.1:7373"
+	}
+	fmt.Printf("Control server listening at http://%s\n", addr)
+	go http.ListenAndServe(addr, nil)
+}
+
 func RunScan(reader *bufio.Reader) {
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	scanDir := filepath.Join("scans", timestamp)
-	snapshotDir := filepath.Join(scanDir, "snapshots")
+	scansDir := os.Getenv("SCANS_PATH")
+	if scansDir == "" {
+		scansDir = filepath.Join("scans", timestamp)
+	} else {
+		scansDir = filepath.Join(scansDir, timestamp)
+	}
+
+	snapshotDir := filepath.Join(scansDir, "snapshots")
 	discardedDir := filepath.Join(snapshotDir, "discarded")
 	os.MkdirAll(discardedDir, 0755)
 
@@ -44,20 +94,11 @@ func RunScan(reader *bufio.Reader) {
 	datastore.DB.Find(&hosts)
 
 	working, failed, discardedCount := performParallelSnapshots(snapshotDir, discardedDir, hosts)
-	writeReport(scanDir, working, failed, discardedCount)
+	writeReport(scansDir, working, failed, discardedCount)
 
 	if genHTML {
-		writeHTMLSummary(scanDir, working, failed, discardedCount)
+		writeHTMLSummary(scansDir, working, failed, discardedCount)
 	}
-}
-
-func getSnapshotDir() string {
-	dir := os.Getenv("SNAPSHOTS_PATH")
-	if dir == "" {
-		dir = "./snapshots"
-	}
-	os.MkdirAll(dir, 0755)
-	return dir
 }
 
 func askGenerateHTML(r *bufio.Reader) bool {
@@ -118,6 +159,21 @@ func absDiff(a, b uint32) uint32 {
 		return a - b
 	}
 	return b - a
+}
+
+func openFile(path string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "linux":
+		cmd = exec.Command("xdg-open", path)
+	case "darwin":
+		cmd = exec.Command("open", path)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", path)
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
+	return cmd.Start()
 }
 
 func performParallelSnapshots(snapshotDir, discardedDir string, hosts []models.Host) ([]Result, []string, int) {
@@ -249,6 +305,7 @@ func writeHTMLSummary(dir string, working []Result, failed []string, discarededC
 	darkSVG, _ := os.ReadFile("./assets/dark_mode.svg")
 	lightSVG, _ := os.ReadFile("./assets/light_mode.svg")
 	fontData, _ := os.ReadFile("./assets/killig.woff2.b64")
+	vncConnectSVG, _ := os.ReadFile("./assets/vnc_connect.svg")
 
 	failedCount := len(failed)
 	totalCount := len(working) + failedCount
@@ -280,6 +337,9 @@ h1 {
 	--border: #444;
 	--topbar: #111;
 	--icon-fill: #ffffff;
+	--btn-bg:rgba(34, 46, 58, 0);
+	--btn-fg: #fff;
+	--btn-hover:rgb(153, 0, 0);
 }
 [data-theme="light"] {
 	--bg: #ffffff;
@@ -288,6 +348,9 @@ h1 {
 	--border: #ccc;
 	--topbar: #f2f2f2;
 	--icon-fill: #111111;
+	--btn-bg:rgba(224, 231, 239, 0);
+	--btn-fg: #111;
+	--btn-hover:rgb(252, 179, 179);
 }
 body {
 	background-color: var(--bg);
@@ -339,6 +402,20 @@ header h1 {
 	background: var(--card-bg);
 	border-bottom: 1px solid var(--border);
 }
+button {
+	background-color: var(--btn-bg);
+	color: var(--btn-fg);
+	padding: 6px 12px;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.85rem;
+	transition: background 0.2s ease-in-out, color 0.2s;
+}
+button:hover {
+	background-color: var(--btn-hover);
+	color: var(--btn-fg);
+}
 .grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -386,6 +463,31 @@ header h1 {
 	border-radius: 6px;
 	border: 2px solid white;
 }
+.vnc-icon-button {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 28px;
+	height: 28px;
+	background-color: var(--btn-bg);
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: background-color 0.2s ease-in-out;
+}
+.vnc-icon-button svg {
+	width: 20px;
+	height: 20px;
+	fill: var(--icon-fill);
+}
+.vnc-icon-button:hover {
+	background-color: var(--btn-hover);
+}
+.card {
+	position: relative;
+}
 </style>
 </head>
 <body>
@@ -404,7 +506,7 @@ header h1 {
 <div class="stats">
 	<div><strong>Report Date:</strong> ` + now.Format("2006-01-02 15:04:05") + `</div>
 	<div><strong>Total Hosts:</strong> ` + strconv.Itoa(totalHosts) + ` |
-	<strong>VNC Scanned:</strong> ` + strconv.Itoa(totalCount) + ` |
+	<strong>Succeeded:</strong> ` + strconv.Itoa(totalCount - failedCount - discarededCount) + ` |
 	<strong>Failed:</strong> ` + strconv.Itoa(failedCount) + ` |
 	<strong>Discarded:</strong> ` + strconv.Itoa(discarededCount) + `</div>
 	</div>
@@ -422,6 +524,11 @@ header h1 {
 			f.WriteString(fmt.Sprintf("<p><strong>Location:</strong> %s</p>", r.Location))
 		}
 		f.WriteString(fmt.Sprintf(`<img src="%s" alt="Snapshot of %s">`, r.Filename, r.IP))
+		f.WriteString(fmt.Sprintf(`
+		<div class="vnc-icon-button" onclick="launchVNC('%s', '%d')" title="Connect via VNC">
+			%s
+		</div>
+		`, r.IP, r.Port, string(vncConnectSVG)))
 		f.WriteString(`</div>`)
 	}
 
@@ -431,6 +538,12 @@ header h1 {
 </div>
 
 <script>
+const CONTROL_SERVER_ADDR = "` + os.Getenv("CONTROL_SERVER_ADDR") + `";
+function getControlServerURL() {
+	let addr = CONTROL_SERVER_ADDR || "127.0.0.1:7373";
+	if (!addr.startsWith("http")) addr = "http://" + addr;
+	return addr;
+}
 function toggleTheme() {
 	const html = document.documentElement;
 	html.setAttribute("data-theme", html.getAttribute("data-theme") === "dark" ? "light" : "dark");
@@ -441,6 +554,19 @@ function showOverlay(src) {
 }
 function hideOverlay() {
 	document.getElementById("overlay").style.display = "none";
+}
+function launchVNC(ip, port) {
+	const url = getControlServerURL() + '/open-vnc?ip=' + ip + '&port=' + port;
+	fetch(url)
+		.then(r => {
+			if (r.ok) {
+				alert("Launching VNC viewer...");
+			}
+			return;
+		})
+		.catch(err => {
+			console.warn("Fetch to control server failed (VNC may still launch):", err);
+		});
 }
 document.addEventListener("keydown", e => {
 	if (e.key === "Escape") hideOverlay();
@@ -454,6 +580,11 @@ document.querySelectorAll(".card img").forEach(img => {
 </script>
 </body>
 </html>`)
+
+	err = openFile(path)
+	if err != nil {
+		fmt.Println("Failed to open generated file:", err)
+	}
 
 	fmt.Println("HTML summary saved")
 }
