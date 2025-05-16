@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -27,7 +28,7 @@ func main() {
 
 func loadEnvAndInitDB() {
 	if err := godotenv.Load(); err != nil {
-		panic(err)
+		fmt.Println("Error loading .env file, using defaults:", err)
 	}
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
