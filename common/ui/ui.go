@@ -8,8 +8,8 @@ import (
 
 	"smuggr.xyz/thughunter/common/models"
 	"smuggr.xyz/thughunter/core/datastore"
-	"smuggr.xyz/thughunter/core/scraper"
 	"smuggr.xyz/thughunter/core/scanner"
+	"smuggr.xyz/thughunter/core/scraper"
 )
 
 func MainMenuLoop(r *bufio.Reader, predefined []string) {
@@ -74,12 +74,14 @@ func browseData(r *bufio.Reader) {
 	var hosts []models.Host
 	datastore.DB.Find(&hosts)
 
-	fmt.Printf("Loaded %d hosts from DB\n", len(hosts))
 	if filter == "" {
 		for _, h := range hosts {
 			fmt.Printf("IP: %s, Hostname: %s, Loc: %s, Labels: %v, Services: %v\n",
 				h.IP, h.Hostname, h.Location, h.Labels, h.Services)
 		}
+
+		fmt.Printf("Loaded %d hosts from DB\n", len(hosts))
+		fmt.Println("No filter applied, showing all hosts.")
 		return
 	}
 
@@ -98,6 +100,8 @@ func browseData(r *bufio.Reader) {
 			}
 		}
 	}
+
+	fmt.Printf("Loaded %d hosts from DB\n", len(hosts))
 
 	if !matchFound {
 		fmt.Printf("No hosts found with service matching '%s'\n", filter)

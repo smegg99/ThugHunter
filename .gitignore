@@ -29,3 +29,4 @@ app/hosts.db
 app/thughunter.db
 *.db
 app/snapshots
+app/scans

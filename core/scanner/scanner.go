@@ -3,8 +3,12 @@ package scanner
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"image"
+	_ "image/png"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,17 +32,22 @@ type Result struct {
 }
 
 func RunScan(reader *bufio.Reader) {
-	snapshotDir := getSnapshotDir()
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	scanDir := filepath.Join("scans", timestamp)
+	snapshotDir := filepath.Join(scanDir, "snapshots")
+	discardedDir := filepath.Join(snapshotDir, "discarded")
+	os.MkdirAll(discardedDir, 0755)
+
 	genHTML := askGenerateHTML(reader)
 
 	var hosts []models.Host
 	datastore.DB.Find(&hosts)
 
-	working, failed := performParallelSnapshots(snapshotDir, hosts)
-	writeReport(snapshotDir, working, failed)
+	working, failed, discardedCount := performParallelSnapshots(snapshotDir, discardedDir, hosts)
+	writeReport(scanDir, working, failed, discardedCount)
 
 	if genHTML {
-		writeHTMLSummary(snapshotDir, working)
+		writeHTMLSummary(scanDir, working, failed, discardedCount)
 	}
 }
 
@@ -57,8 +66,63 @@ func askGenerateHTML(r *bufio.Reader) bool {
 	return strings.ToLower(strings.TrimSpace(resp)) == "y"
 }
 
-func performParallelSnapshots(snapshotDir string, hosts []models.Host) ([]Result, []string) {
-	var working []Result
+func isSingleColorImage(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		fmt.Printf("[!] Failed to stat image: %v\n", err)
+		return false
+	}
+	if info.Size() < 1024 {
+		fmt.Printf("[!] Image too small or empty: %s\n", path)
+		return false
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Printf("[!] Failed to read image: %v\n", err)
+		return false
+	}
+
+	fmt.Printf("[?] Header of %s: % x\n", path, data[:12])
+
+	contentType := http.DetectContentType(data[:512])
+	if !strings.HasPrefix(contentType, "image/png") {
+		fmt.Printf("[!] Invalid image type (%s): %s\n", contentType, path)
+		return false
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		fmt.Printf("[!] Failed to decode image: %v\n", err)
+		return false
+	}
+
+	bounds := img.Bounds()
+	first := img.At(bounds.Min.X, bounds.Min.Y)
+	r0, g0, b0, _ := first.RGBA()
+	const tolerance = 0x0100
+
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			r, g, b, _ := img.At(x, y).RGBA()
+			if absDiff(r0, r) > tolerance || absDiff(g0, g) > tolerance || absDiff(b0, b) > tolerance {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func absDiff(a, b uint32) uint32 {
+	if a > b {
+		return a - b
+	}
+	return b - a
+}
+
+func performParallelSnapshots(snapshotDir, discardedDir string, hosts []models.Host) ([]Result, []string, int) {
+	var rawResults []Result
+	var discarded int
 	var failed []string
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -86,25 +150,41 @@ func performParallelSnapshots(snapshotDir string, hosts []models.Host) ([]Result
 			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 			defer cancel()
 
-			err := exec.CommandContext(ctx, "vncsnapshot", "-quiet", "-nojpeg", "-compresslevel", "0", target, output).Run()
+			err := exec.CommandContext(ctx, "vncsnapshot", "-quiet", "-ignoreblank", target, output).Run()
 
 			mu.Lock()
+			defer mu.Unlock()
+
 			if ctx.Err() == context.DeadlineExceeded {
 				fmt.Printf("[!] %s - Timeout\n", target)
 				failed = append(failed, target)
-			} else if err == nil {
-				fmt.Printf("[+] %s - Snapshot saved\n", target)
-				working = append(working, Result{IP: h.IP, Port: p, Filename: filename, Hostname: h.Hostname, Labels: h.Labels, Location: h.Location})
-			} else {
+			} else if err != nil {
 				fmt.Printf("[-] %s - Error: %v\n", target, err)
 				failed = append(failed, target)
+			} else {
+				if isSingleColorImage(output) {
+					fmt.Printf("[-] %s:%d - Discarded single-color image\n", h.IP, p)
+					discardPath := filepath.Join(discardedDir, filename)
+					os.Rename(output, discardPath)
+					failed = append(failed, fmt.Sprintf("%s:%d", h.IP, p))
+					discarded++
+					return
+				}
+				fmt.Printf("[+] %s - Snapshot saved\n", target)
+				rawResults = append(rawResults, Result{
+					IP:       h.IP,
+					Port:     p,
+					Filename: filepath.Join("snapshots", filename),
+					Hostname: h.Hostname,
+					Labels:   h.Labels,
+					Location: h.Location,
+				})
 			}
-			mu.Unlock()
 		}(host, port)
 	}
 
 	wg.Wait()
-	return working, failed
+	return rawResults, failed, discarded
 }
 
 func getConcurrencyLimit() int {
@@ -123,7 +203,7 @@ func getConcurrencyLimit() int {
 	return limit
 }
 
-func writeReport(dir string, working []Result, failed []string) {
+func writeReport(dir string, working []Result, failed []string, discardedCount int) {
 	now := time.Now()
 	dateStr := now.Format("2006-01-02_15-04-05")
 	path := filepath.Join(dir, fmt.Sprintf("thug_hunting_%s.txt", dateStr))
@@ -135,6 +215,7 @@ func writeReport(dir string, working []Result, failed []string) {
 	defer file.Close()
 
 	file.WriteString(fmt.Sprintf("VNC Thug-Hunting Report — %s\n\n", now.Format("2006-01-02 15:04:05")))
+	file.WriteString(fmt.Sprintf("Total Discarded: %d\n\n", discardedCount))
 	file.WriteString("Working VNC services:\n")
 	for _, w := range working {
 		file.WriteString(fmt.Sprintf("%s:%d\n", w.IP, w.Port))
@@ -146,7 +227,7 @@ func writeReport(dir string, working []Result, failed []string) {
 	fmt.Println("📄 Report saved")
 }
 
-func writeHTMLSummary(dir string, results []Result) {
+func writeHTMLSummary(dir string, working []Result, failed []string, discarededCount int) {
 	now := time.Now()
 	dateStr := now.Format("2006-01-02_15-04-05")
 	path := filepath.Join(dir, fmt.Sprintf("thug_hunting_%s.html", dateStr))
@@ -163,11 +244,11 @@ func writeHTMLSummary(dir string, results []Result) {
 	lightSVG, _ := os.ReadFile("./assets/light_mode.svg")
 	fontData, _ := os.ReadFile("./assets/killig.woff2.b64")
 
-	total := len(results)
+	failedCount := len(failed)
+	totalCount := len(working) + failedCount
 	var allHosts []models.Host
 	datastore.DB.Find(&allHosts)
 	totalHosts := len(allHosts)
-	failed := totalHosts - total
 
 	f.WriteString(`<!DOCTYPE html>
 <html lang="en" data-theme="dark">
@@ -317,13 +398,15 @@ header h1 {
 <div class="stats">
 	<div><strong>Report Date:</strong> ` + now.Format("2006-01-02 15:04:05") + `</div>
 	<div><strong>Total Hosts:</strong> ` + strconv.Itoa(totalHosts) + ` |
-	<strong>VNC Scanned:</strong> ` + strconv.Itoa(total) + ` |
-	<strong>Failed:</strong> ` + strconv.Itoa(failed) + `</div>
+	<strong>VNC Scanned:</strong> ` + strconv.Itoa(totalCount) + ` |
+	<strong>Failed:</strong> ` + strconv.Itoa(failedCount) + ` |
+	<strong>Discarded:</strong> ` + strconv.Itoa(discarededCount) + `</div>
+	</div>
 </div>
 
 <div class="grid">`)
 
-	for _, r := range results {
+	for _, r := range working {
 		f.WriteString(`<div class="card">`)
 		f.WriteString(fmt.Sprintf("<h2>%s:%d</h2>", r.IP, r.Port))
 		if r.Hostname != "" {
