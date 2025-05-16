@@ -29,6 +29,7 @@ type Result struct {
 	Hostname string
 	Labels   []string
 	Location string
+	Services map[string]int
 }
 
 func StartControlServer() {
@@ -240,6 +241,7 @@ func performParallelSnapshots(snapshotDir, discardedDir string, hosts []models.H
 					Hostname: h.Hostname,
 					Labels:   h.Labels,
 					Location: h.Location,
+					Services: h.Services,
 				})
 			}
 		}(host, port)
@@ -289,6 +291,49 @@ func writeReport(dir string, working []Result, failed []string, discardedCount i
 	fmt.Println("📄 Report saved")
 }
 
+func renderInfoText(hostname, location string) string {
+	var b strings.Builder
+	if hostname != "" {
+		b.WriteString(fmt.Sprintf("<p><strong>Hostname:</strong> %s</p>", hostname))
+	}
+	if location != "" {
+		b.WriteString(fmt.Sprintf("<p><strong>Location:</strong> %s</p>", location))
+	}
+	return b.String()
+}
+
+func renderLabels(labels []string) string {
+	if len(labels) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("<p><strong>Labels:</strong> ")
+	for i, label := range labels {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(`<span class="label">` + label + `</span>`)
+	}
+	b.WriteString("</p>")
+	return b.String()
+}
+
+func renderServices(services map[string]int) string {
+	if len(services) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("<p><strong>Other Services:</strong><ul>")
+	for name, port := range services {
+		if name == "VNC" {
+			continue
+		}
+		b.WriteString(fmt.Sprintf("<li>%s: %d</li>", name, port))
+	}
+	b.WriteString("</ul></p>")
+	return b.String()
+}
+
 func writeHTMLSummary(dir string, working []Result, failed []string, discarededCount int) {
 	now := time.Now()
 	dateStr := now.Format("2006-01-02_15-04-05")
@@ -306,6 +351,7 @@ func writeHTMLSummary(dir string, working []Result, failed []string, discarededC
 	lightSVG, _ := os.ReadFile("./assets/light_mode.svg")
 	fontData, _ := os.ReadFile("./assets/killig.woff2.b64")
 	vncConnectSVG, _ := os.ReadFile("./assets/vnc_connect.svg")
+	hostInfoSVG, _ := os.ReadFile("./assets/host_info.svg")
 
 	failedCount := len(failed)
 	totalCount := len(working) + failedCount
@@ -488,6 +534,56 @@ button:hover {
 .card {
 	position: relative;
 }
+.label {
+	border-radius: 4px;
+	padding: 2px 6px;
+	font-size: 0.75rem;
+	white-space: nowrap;
+}
+.vnc-info-button {
+	position: absolute;
+	top: 8px;
+	right: 44px;
+	width: 28px;
+	height: 28px;
+	background-color: var(--btn-bg);
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: background-color 0.2s ease-in-out;
+}
+
+.vnc-info-button svg {
+	width: 20px;
+	height: 20px;
+	fill: var(--icon-fill);
+}
+
+.vnc-info-button:hover {
+	background-color: var(--btn-hover);
+}
+
+.info-pane {
+	display: none;
+	position: absolute;
+	top: 36px;
+	right: 0;
+	background-color: var(--card-bg);
+	border: 1px solid var(--border);
+	padding: 5px;
+	margin: 10px;
+	border-radius: 6px;
+	width: 250px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	z-index: 999;
+	font-size: 0.8rem;
+}
+
+.vnc-info-button:hover .info-pane {
+	display: block;
+}
 </style>
 </head>
 <body>
@@ -506,7 +602,7 @@ button:hover {
 <div class="stats">
 	<div><strong>Report Date:</strong> ` + now.Format("2006-01-02 15:04:05") + `</div>
 	<div><strong>Total Hosts:</strong> ` + strconv.Itoa(totalHosts) + ` |
-	<strong>Succeeded:</strong> ` + strconv.Itoa(totalCount - failedCount - discarededCount) + ` |
+	<strong>Succeeded:</strong> ` + strconv.Itoa(totalCount-failedCount-discarededCount) + ` |
 	<strong>Failed:</strong> ` + strconv.Itoa(failedCount) + ` |
 	<strong>Discarded:</strong> ` + strconv.Itoa(discarededCount) + `</div>
 	</div>
@@ -515,21 +611,29 @@ button:hover {
 <div class="grid">`)
 
 	for _, r := range working {
-		f.WriteString(`<div class="card">`)
-		f.WriteString(fmt.Sprintf("<h2>%s:%d</h2>", r.IP, r.Port))
-		if r.Hostname != "" {
-			f.WriteString(fmt.Sprintf("<p><strong>Hostname:</strong> %s</p>", r.Hostname))
-		}
-		if r.Location != "" {
-			f.WriteString(fmt.Sprintf("<p><strong>Location:</strong> %s</p>", r.Location))
-		}
-		f.WriteString(fmt.Sprintf(`<img src="%s" alt="Snapshot of %s">`, r.Filename, r.IP))
 		f.WriteString(fmt.Sprintf(`
-		<div class="vnc-icon-button" onclick="launchVNC('%s', '%d')" title="Connect via VNC">
-			%s
-		</div>
-		`, r.IP, r.Port, string(vncConnectSVG)))
-		f.WriteString(`</div>`)
+		<div class="card">
+			<h2>%s:%d</h2>
+			<img src="%s" alt="Snapshot of %s" onclick="showOverlay('%s')">
+		
+			<div class="vnc-icon-button" onclick="launchVNC('%s', '%d')" title="Connect via VNC">%s</div>
+		
+			<div class="vnc-info-button" onmouseover="showInfo(this)" onmouseout="hideInfo(this)">
+				%s
+				<div class="info-pane">
+					%s
+					%s
+					%s
+				</div>
+			</div>
+		</div>`,
+			r.IP, r.Port,
+			r.Filename, r.IP, r.Filename,
+			r.IP, r.Port, string(vncConnectSVG),
+			string(hostInfoSVG),
+			renderInfoText(r.Hostname, r.Location),
+			renderLabels(r.Labels),
+			renderServices(r.Services)))
 	}
 
 	f.WriteString(`</div>
