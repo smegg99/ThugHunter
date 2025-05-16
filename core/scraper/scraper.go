@@ -23,32 +23,48 @@ import (
 
 func LaunchUpdater(query string) (newCount, updCount int) {
 	u := "https://platform.censys.io/search?q=" + url.QueryEscape(query)
+	userDataDir := os.Getenv("CDP_USER_DATA_DIR")
+	if userDataDir == "" {
+		userDataDir = "./cdp-profile"
+	}
 
-	userDataDir := "./cdp-profile"
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.Flag("headless", false),
-		chromedp.Flag("enable-automation", false),
-		// persistent profile so cookies/extensions look real
 		chromedp.UserDataDir(userDataDir),
+		chromedp.Flag("headless", false),
+		chromedp.Flag("disable-blink-features", "AutomationControlled"),
+		chromedp.Flag("enable-automation", false),
+		chromedp.Flag("disable-infobars", true),
+		chromedp.Flag("start-maximized", true),
+		chromedp.Flag("no-default-browser-check", true),
+		chromedp.Flag("no-first-run", true),
 	)
+
 	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	defer cancel()
 
 	ctx, cancelCtx := chromedp.NewContext(allocCtx)
 	defer cancelCtx()
 
+	stealthScript := `
+	Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+	window.chrome = { runtime: {} };
+	Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+	Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3] });
+	Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });
+	const originalQuery = window.navigator.permissions.query;
+	window.navigator.permissions.query = (parameters) => (
+		parameters.name === 'notifications'
+			? Promise.resolve({ state: Notification.permission })
+			: originalQuery(parameters)
+	);
+	const newUA = navigator.userAgent.replace('HeadlessChrome', 'Chrome');
+	Object.defineProperty(navigator, 'userAgent', { get: () => newUA });
+	`
+
 	if err := chromedp.Run(ctx,
-		chromedp.EvaluateAsDevTools(`
-            Object.defineProperty(navigator, 'webdriver', {
-                get: () => false
-            });
-            const ua = navigator.userAgent.replace(/HeadlessChrome/, 'Chrome');
-            Object.defineProperty(navigator, 'userAgent', {
-                get: () => ua
-            });
-        `, nil),
+		chromedp.Evaluate(stealthScript, nil),
 	); err != nil {
-		log.Fatalf("failed to patch webdriver: %v", err)
+		log.Fatalf("failed to inject stealth JS: %v", err)
 	}
 
 	if err := chromedp.Run(ctx, network.Enable()); err != nil {
@@ -63,7 +79,7 @@ func LaunchUpdater(query string) (newCount, updCount int) {
 	bufio.NewReader(os.Stdin).ReadString('\n')
 
 	var html string
-	if err := chromedp.Run(ctx, chromedp.OuterHTML("html", &html, chromedp.ByQuery)); err != nil {
+	if err := chromedp.Run(ctx, chromedp.OuterHTML("html", &html)); err != nil {
 		log.Fatalf("extract html: %v", err)
 	}
 
@@ -72,24 +88,20 @@ func LaunchUpdater(query string) (newCount, updCount int) {
 		log.Fatalf("goquery parse: %v", err)
 	}
 
-	// extract host cards
 	doc.Find("div[data-testid='hostDetailsCard']").Each(func(_ int, s *goquery.Selection) {
 		h := models.Host{Services: make(models.JSONServiceMap)}
-		// IP & hostname
+
 		link := s.Find("a[title^='View']")
 		href, _ := link.Attr("href")
 		h.IP = filepath.Base(strings.Split(href, "?")[0])
 		h.Hostname = s.Find("._typographyDefault_80wah_2").First().Text()
 
-		// labels
 		s.Find("div[data-testid='label-list'] span._label_13xbf_14").Each(func(_ int, lab *goquery.Selection) {
 			h.Labels = append(h.Labels, lab.Text())
 		})
 
-		// location
 		h.Location = s.Find("table.qI1Kw td._typographyDefault_80wah_2").First().Text()
 
-		// services
 		s.Find(".BNqaQ a[title]").Each(func(_ int, svc *goquery.Selection) {
 			t := svc.Find("span._label_13xbf_14").Text()
 			parts := strings.Split(t, " /")
@@ -101,7 +113,6 @@ func LaunchUpdater(query string) (newCount, updCount int) {
 			}
 		})
 
-		// upsert
 		var existing models.Host
 		r := datastore.DB.First(&existing, "ip = ?", h.IP)
 		if r.Error != nil && r.Error == gorm.ErrRecordNotFound {

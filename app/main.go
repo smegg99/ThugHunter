@@ -12,6 +12,9 @@ import (
 
 var predefined = []string{
 	`host.services.vnc.security_types.value = "1" and host.operating_system.product = "linux"`,
+	`host.services.vnc.security_types.value = "1" and host.services.vnc.desktop_name= "QEMU"`,
+	`host.services.vnc.security_types.value = "1" and host.services.vnc.security_types.name = "None"`,
+	`host.services.vnc.security_types.value = "1" and (host.operating_system.product = "linux" or host.operating_system.product = "unix")`,
 }
 
 func main() {

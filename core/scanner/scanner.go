@@ -147,7 +147,13 @@ func performParallelSnapshots(snapshotDir, discardedDir string, hosts []models.H
 			filename := fmt.Sprintf("%s:%d.png", h.IP, p)
 			output := filepath.Join(snapshotDir, filename)
 
-			ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+			timeout := 6 * time.Second
+			if toStr := os.Getenv("TIMEOUT_DEFAULT"); toStr != "" {
+				if toVal, err := strconv.Atoi(toStr); err == nil && toVal > 0 {
+					timeout = time.Duration(toVal) * time.Second
+				}
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 
 			err := exec.CommandContext(ctx, "vncsnapshot", "-quiet", "-ignoreblank", target, output).Run()
