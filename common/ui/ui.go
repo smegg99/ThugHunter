@@ -31,6 +31,7 @@ func MainMenuLoop(r *bufio.Reader, predefined []string) {
 }
 
 func showMainMenu(r *bufio.Reader) int {
+	fmt.Println("\n=== ThugHunter Main Menu ===")
 	fmt.Println("1. Launch Updater")
 	fmt.Println("2. Browse Saved Data")
 	fmt.Println("3. Check VNC Services and Snapshot")

@@ -20,6 +20,7 @@ var predefined = []string{
 }
 
 func main() {
+	fmt.Println("Starting ThugHunter...")
 	loadEnvAndInitDB()
 	r := bufio.NewReader(os.Stdin)
 	scanner.StartControlServer()
@@ -28,11 +29,12 @@ func main() {
 
 func loadEnvAndInitDB() {
 	if err := godotenv.Load(); err != nil {
-		fmt.Println("Error loading .env file, using defaults:", err)
+		fmt.Println("No .env file found, using defaults")
 	}
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "./thughunter.db"
 	}
+	fmt.Printf("Initializing database: %s\n", dbPath)
 	datastore.Initialize(dbPath)
 }
