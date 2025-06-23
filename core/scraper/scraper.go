@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/cdproto/network"
@@ -75,8 +76,22 @@ func LaunchUpdater(query string) (newCount, updCount int) {
 		log.Fatalf("navigate error: %v", err)
 	}
 
-	fmt.Println("Please complete login/navigation in the browser and press Enter to continue...")
-	bufio.NewReader(os.Stdin).ReadString('\n')
+	var avatarExists bool
+	fmt.Println("Checking login status...")
+	
+	if err := chromedp.Run(ctx,
+		chromedp.Sleep(3*time.Second),
+		chromedp.Evaluate(`document.querySelector('div[class*="_avatar_"][role="img"]') !== null`, &avatarExists),
+	); err != nil {
+		log.Printf("Error checking login status: %v", err)
+	}
+
+	if !avatarExists {
+		fmt.Println("Not logged in. Please complete login/navigation in the browser and press Enter to continue...")
+		bufio.NewReader(os.Stdin).ReadString('\n')
+	} else {
+		fmt.Println("Already logged in, continuing automatically...")
+	}
 
 	var html string
 	if err := chromedp.Run(ctx, chromedp.OuterHTML("html", &html)); err != nil {
