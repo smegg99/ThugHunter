@@ -47,9 +47,15 @@ func launchUpdater(r *bufio.Reader, predefined []string) {
 	for i, q := range predefined {
 		fmt.Printf("%d) %s\n", i+1, q)
 	}
+	fmt.Printf("%d) Run all predefined queries automatically\n", len(predefined)+1)
 	fmt.Print("0) Custom query\nSelect: ")
 	selStr, _ := r.ReadString('\n')
 	sel, _ := strconv.Atoi(strings.TrimSpace(selStr))
+
+	if sel == len(predefined)+1 {
+		runAllQueries(predefined)
+		return
+	}
 
 	var query string
 	if sel > 0 && sel <= len(predefined) {
@@ -65,6 +71,23 @@ func launchUpdater(r *bufio.Reader, predefined []string) {
 
 	newCount, updCount := scraper.LaunchUpdater(query)
 	fmt.Printf("Import complete: %d new, %d updated\n", newCount, updCount)
+}
+
+func runAllQueries(predefined []string) {
+	fmt.Printf("Running all %d predefined queries automatically...\n", len(predefined))
+	totalNew := 0
+	totalUpdated := 0
+
+	for i, query := range predefined {
+		fmt.Printf("\n[%d/%d] Running query: %s\n", i+1, len(predefined), query)
+		newCount, updCount := scraper.LaunchUpdater(query)
+		fmt.Printf("Query %d complete: %d new, %d updated\n", i+1, newCount, updCount)
+		totalNew += newCount
+		totalUpdated += updCount
+	}
+
+	fmt.Printf("\n=== All queries completed ===\n")
+	fmt.Printf("Total results: %d new, %d updated\n", totalNew, totalUpdated)
 }
 
 func browseData(r *bufio.Reader) {
