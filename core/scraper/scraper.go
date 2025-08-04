@@ -78,7 +78,7 @@ func LaunchUpdater(query string) (newCount, updCount int) {
 
 	var avatarExists bool
 	fmt.Println("Checking login status...")
-	
+
 	if err := chromedp.Run(ctx,
 		chromedp.Sleep(3*time.Second),
 		chromedp.Evaluate(`document.querySelector('div[class*="_avatar_"][role="img"]') !== null`, &avatarExists),
@@ -117,12 +117,12 @@ func LaunchUpdater(query string) (newCount, updCount int) {
 
 		h.Location = s.Find("table.qI1Kw td._typographyDefault_80wah_2").First().Text()
 
-		s.Find(".BNqaQ a[title]").Each(func(_ int, svc *goquery.Selection) {
-			t := svc.Find("span._label_13xbf_14").Text()
-			parts := strings.Split(t, " /")
-			if len(parts) >= 1 {
-				srv := strings.TrimSpace(parts[len(parts)-1])
-				portStr := strings.Fields(parts[0])[0]
+		s.Find("div.jzMRW div._7nxyW a[title]").Each(func(_ int, svc *goquery.Selection) {
+			t := svc.Find("span._label_r9r80_24").Text()
+			parts := strings.Split(t, " / ")
+			if len(parts) >= 2 {
+				portStr := strings.TrimSpace(parts[0])
+				srv := strings.TrimSpace(parts[1])
 				p, _ := strconv.Atoi(portStr)
 				h.Services[srv] = p
 			}

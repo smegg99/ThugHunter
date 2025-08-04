@@ -16,6 +16,7 @@ require (
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.4.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 )
 
 require (
@@ -24,6 +25,6 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	golang.org/x/sys v0.32.0 // indirect
-	gorm.io/driver/sqlite v1.5.7
-	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
+	gorm.io/driver/sqlite v1.6.0
+	gorm.io/gorm v1.30.1
 )

@@ -30,3 +30,6 @@ app/thughunter.db
 *.db
 app/snapshots
 app/scans
+cdp-profile
+scans
+thughunter
