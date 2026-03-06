@@ -11,8 +11,11 @@
 # Test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
+# Code coverage profiles and other test artifacts
 *.out
+coverage.*
+*.coverprofile
+profile.cov
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
@@ -23,13 +26,23 @@ go.work.sum
 
 # env file
 .env
-.misc
-app/cdp-profile
-app/hosts.db
-app/thughunter.db
+
+# Editor/IDE
+# .idea/
+# .vscode/
+node_modules
+
+# SQLite database files
 *.db
-app/snapshots
-app/scans
-cdp-profile
-scans
+*.db-shm
+*.db-wal
+core/email
+
+.task
+bin
+frontend/dist
+frontend/node_modules
+build/linux/appimage/build
+build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 thughunter
+config.json

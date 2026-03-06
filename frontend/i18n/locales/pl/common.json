@@ -1,0 +1,23 @@
+{
+  "routes": {
+    "home": "Strona główna"
+  },
+  "settings": {
+    "language": "Język",
+    "theme": "Motyw",
+    "themes": {
+      "auto": "Auto",
+      "light": "Jasny",
+      "dark": "Ciemny",
+      "lightHighContrast": "Jasny WK",
+      "darkHighContrast": "Ciemny WK"
+    },
+    "accent": "Kolor akcentu",
+    "accentModes": {
+      "auto": "Z systemu",
+      "custom": "Własny"
+    },
+    "currentAccent": "Aktualny akcent",
+    "accentWatchNotSupported": "Wykrywanie koloru akcentu na żywo nie jest dostępne na tej platformie. Użyj trybu własnego, aby ustawić statyczny kolor."
+  }
+}

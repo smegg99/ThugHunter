@@ -1,0 +1,20 @@
+{
+	"biome.lsp.bin": "./web/node_modules/.bin/biome",
+	"biome.configurationPath": "./web/biome.json",
+	// Biome cannot see Vue template bindings, so disable it for .vue files
+	"[vue]": {
+		"editor.defaultFormatter": "Vue.volar"
+	},
+	"biome.enabled": true,
+  "files.associations": {
+    "justfile": "makefile",
+    "Justfile": "makefile"
+  },
+  "gopls": {
+		"build.buildFlags": [],
+		"env": {
+			"CGO_ENABLED": "1",
+			"GOOS": "linux"
+		}
+  }
+}

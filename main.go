@@ -2,40 +2,102 @@
 package main
 
 import (
-	"bufio"
-	"fmt"
+	"embed"
+	"log"
 	"os"
 
-	"github.com/joho/godotenv"
-	"smuggr.xyz/thughunter/common/ui"
-	"smuggr.xyz/thughunter/core/datastore"
-	"smuggr.xyz/thughunter/core/scanner"
+	"smegg.me/thughunter/common/config"
+	"smegg.me/thughunter/common/logger"
+	"smegg.me/thughunter/core/datastore"
+	configservice "smegg.me/thughunter/services/config"
+	themeservice "smegg.me/thughunter/services/theme"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-var predefined = []string{
-	`host.services.vnc.security_types.value = "1" and host.operating_system.product = "linux"`,
-	`host.services.vnc.security_types.value = "1" and host.services.vnc.desktop_name= "QEMU"`,
-	`host.services.vnc.security_types.value = "1" and host.services.vnc.security_types.name = "None"`,
-	`host.services.vnc.security_types.value = "1" and (host.operating_system.product = "linux" or host.operating_system.product = "unix")`,
-	`host.services.vnc.security_types.name = "None"`,
+//go:embed all:frontend/dist
+var assets embed.FS
+
+func Cleanup() error {
+	logger.Info().Msg("cleaning up...")
+	return nil
+}
+
+func RunApplication() {
+	if config.LaunchedViaAppImage() {
+		logger.Info().Int("WEBKIT_DISABLE_DMABUF_RENDERER", 1).Msg("running in AppImage environment, setting")
+
+		// Disable WebKit's DMA-BUF renderer to avoid rendering issues on some Linux systems. On my EndeavourOS, KDE Plasma with Wayland and AMD GPU it causes the entire window to go white and then crash.
+		os.Setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
+	}
+
+	app := application.New(application.Options{
+		Name:        "Thug Hunter",
+		Description: "A tool for hunting down thugs on the internet.",
+		Services: []application.Service{
+			application.NewService(&configservice.Service{}),
+			application.NewService(&themeservice.Service{}),
+		},
+		Assets: application.AssetOptions{
+			Handler: application.AssetFileServerFS(assets),
+		},
+	})
+
+	app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title:     "Thug Hunter",
+		Width:     1200,
+		Height:    800,
+		MinWidth:  1000,
+		MinHeight: 650,
+		// This fixes a weird issue on wayland where the window doesn't maximize properly, issue #4429 in the Wails repo.
+		MaxWidth:  99999,
+		MaxHeight: 99999,
+		URL:       "/",
+		Mac: application.MacWindow{
+			CollectionBehavior: application.MacWindowCollectionBehaviorFullScreenPrimary,
+		},
+	})
+
+	themeservice.RegisterThemeWatcher(app)
+
+	err := app.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {
-	fmt.Println("Starting ThugHunter...")
-	loadEnvAndInitDB()
-	r := bufio.NewReader(os.Stdin)
-	scanner.StartControlServer()
-	ui.MainMenuLoop(r, predefined)
-}
+	defer func() {
+		if err := Cleanup(); err != nil {
+			logger.Fatal().Err(err).Msg("cleanup")
+		}
+	}()
 
-func loadEnvAndInitDB() {
-	if err := godotenv.Load(); err != nil {
-		fmt.Println("No .env file found, using defaults")
+	logger.Initialize()
+	logger.Info().Msg("starting thughunter...")
+
+	logger.Debug().Msg("loading configuration")
+	if path, err := config.Initialize(); err != nil {
+		if e, ok := config.IsDefaultGenerated(err); ok {
+			logger.Info().Str("config_path", e.Path).Msg("default config generated")
+			os.Exit(0)
+		}
+		logger.Fatal().Msg(err.Error())
+	} else {
+		logger.Debug().Str("config_path", path).Msg("configuration loaded")
 	}
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		dbPath = "./thughunter.db"
+
+	cfg := config.Get()
+	logger.Debug().Msg("reinitializing logger with config")
+
+	if err := logger.ReInitialize(cfg.Logger); err != nil {
+		logger.Fatal().Err(err).Msg("logger")
 	}
-	fmt.Printf("Initializing database: %s\n", dbPath)
-	datastore.Initialize(dbPath)
+
+	logger.Debug().Str("db_path", cfg.Db.Path).Msg("initializing datastore")
+	if err := datastore.Initialize(cfg.Db.Path); err != nil {
+		logger.Fatal().Err(err).Msg("datastore")
+	}
+
+	RunApplication()
 }
