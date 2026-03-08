@@ -21,7 +21,9 @@ type Config struct {
 		UseTls bool `json:"use_tls"`
 	} `json:"imap"`
 
-	Crawler struct {
+	Scraper struct {
+		QueryStrings []any/* CUE closed list */ `json:"custom_query_strings"`
+
 		Endpoints struct {
 			HomeUrl string `json:"home"`
 
@@ -53,7 +55,7 @@ type Config struct {
 		BrowserBinaryPath string `json:"browser_binary_path"`
 
 		VirtualDisplay bool `json:"virtual_display"`
-	} `json:"crawler"`
+	} `json:"scraper"`
 
 	Logger LoggerConfig `json:"logger"`
 
@@ -76,6 +78,8 @@ type LoggerConfig struct {
 	MaxAgeDays int64 `json:"max_age_days"`
 
 	LogName string `json:"log_name"`
+
+	FrontendConsoleLog bool `json:"frontend_console_log"`
 }
 
 type Preferences struct {

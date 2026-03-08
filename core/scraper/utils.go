@@ -1,18 +1,17 @@
-// core/crawler/utils.go
-package crawler
+// core/agent/utils.go
+package scraper
 
 import (
-	"bytes"
 	"crypto/rand"
 	"fmt"
 	"math/big"
 	"strings"
-	"text/template"
 
 	"github.com/brianvoe/gofakeit/v6"
 
 	"smegg.me/thughunter/common/config"
 	"smegg.me/thughunter/common/logger"
+	"smegg.me/thughunter/common/templating"
 	"smegg.me/thughunter/core/models"
 )
 
@@ -64,7 +63,6 @@ type templateData struct {
 	ACCOUNT_ID      string
 	RANDOM_NONSENSE string
 
-	// Fake identity fields (generated via gofakeit)
 	FIRST_NAME string
 	LAST_NAME  string
 	FULL_NAME  string
@@ -75,30 +73,16 @@ type templateData struct {
 	JOB_TITLE  string
 	BUZZWORD   string
 	DOMAIN     string
-	DIGITS_4   string // 4 random digits, e.g. "0742"
-	DIGITS_6   string // 6 random digits
-}
-
-// resolveTemplate renders a Go text/template string with the given data.
-func resolveTemplate(tmplStr string, data templateData) (string, error) {
-	t, err := template.New("").Parse(tmplStr)
-	if err != nil {
-		return "", fmt.Errorf("parse template %q: %w", tmplStr, err)
-	}
-	var buf bytes.Buffer
-	if err := t.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("execute template %q: %w", tmplStr, err)
-	}
-	return buf.String(), nil
+	DIGITS_4   string
+	DIGITS_6   string
 }
 
 // newAccountFromTemplates creates a Account by resolving the config
 // templates with a unique account ID.
 func newAccountFromTemplates(accountID string) (*models.Account, error) {
-	tpl := config.Get().Crawler.Agents.Templates
+	tpl := config.Get().Scraper.Agents.Templates
 	nonsense := generateRandomNonsense()
 
-	// Generate fake identity data
 	faker := gofakeit.New(0) // 0 = random seed from crypto/rand
 	firstName := faker.FirstName()
 	lastName := faker.LastName()
@@ -128,27 +112,27 @@ func newAccountFromTemplates(accountID string) (*models.Account, error) {
 		Str("last_name", lastName).
 		Msg("resolving account templates")
 
-	email, err := resolveTemplate(tpl.EmailTemplate, data)
+	email, err := templating.Resolve(tpl.EmailTemplate, data)
 	if err != nil {
 		return nil, fmt.Errorf("resolve email template: %w", err)
 	}
 
-	password, err := resolveTemplate(tpl.PasswordTemplate, data)
+	password, err := templating.Resolve(tpl.PasswordTemplate, data)
 	if err != nil {
 		return nil, fmt.Errorf("resolve password template: %w", err)
 	}
 
-	firstName, err = resolveTemplate(tpl.FirstNameTemplate, data)
+	firstName, err = templating.Resolve(tpl.FirstNameTemplate, data)
 	if err != nil {
 		return nil, fmt.Errorf("resolve first_name template: %w", err)
 	}
 
-	lastName, err = resolveTemplate(tpl.LastNameTemplate, data)
+	lastName, err = templating.Resolve(tpl.LastNameTemplate, data)
 	if err != nil {
 		return nil, fmt.Errorf("resolve last_name template: %w", err)
 	}
 
-	organization, err := resolveTemplate(tpl.OrganizationTemplate, data)
+	organization, err := templating.Resolve(tpl.OrganizationTemplate, data)
 	if err != nil {
 		return nil, fmt.Errorf("resolve organization template: %w", err)
 	}

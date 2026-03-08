@@ -3,9 +3,8 @@ package repositories
 import (
 	"fmt"
 
-	"gorm.io/gorm"
-
 	"smegg.me/thughunter/common/logger"
+	"smegg.me/thughunter/core/datastore"
 	"smegg.me/thughunter/core/models"
 )
 
@@ -13,15 +12,16 @@ type PKCameraServiceRepository struct {
 	*ServiceRepository[models.PKCameraService]
 }
 
-func NewPKCameraServiceRepository(db *gorm.DB) *PKCameraServiceRepository {
-	return &PKCameraServiceRepository{ServiceRepository: NewServiceRepository[models.PKCameraService](db)}
+func GetPKCameraServiceRepository() *PKCameraServiceRepository {
+	return &PKCameraServiceRepository{ServiceRepository: NewServiceRepository[models.PKCameraService]()}
 }
 
 func (r *PKCameraServiceRepository) ListWithTwoWayAudio() ([]models.PKCameraService, error) {
 	logger.Debug().Msg("listing pkcamera services with two-way audio")
 
+	db := datastore.Get()
 	var services []models.PKCameraService
-	if err := r.db.Where("has_two_way_audio = ?", true).Find(&services).Error; err != nil {
+	if err := db.Where("has_two_way_audio = ?", true).Find(&services).Error; err != nil {
 		return nil, fmt.Errorf("list pkcamera with two-way audio: %w", err)
 	}
 

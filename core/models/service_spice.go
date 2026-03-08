@@ -1,4 +1,4 @@
-// core/models/crawler_service_spice.go
+// core/models/scraper_service_spice.go
 package models
 
 type SPICEService struct {

@@ -1,4 +1,4 @@
-// core/models/crawler_service_rdp.go
+// core/models/scraper_service_rdp.go
 package models
 
 type RDPService struct {

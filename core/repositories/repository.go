@@ -3,29 +3,29 @@ package repositories
 import (
 	"fmt"
 
-	"gorm.io/gorm"
-
 	"smegg.me/thughunter/common/logger"
+	"smegg.me/thughunter/core/datastore"
 )
 
 type Repository[T any] struct {
-	db *gorm.DB
 }
 
-func New[T any](db *gorm.DB) *Repository[T] {
-	return &Repository[T]{db: db}
+func New[T any]() *Repository[T] {
+	return &Repository[T]{}
 }
 
 func (r *Repository[T]) Create(entity *T) error {
 	logger.Debug().Msg("creating entity")
-	return r.db.Create(entity).Error
+	db := datastore.Get()
+	return db.Create(entity).Error
 }
 
 func (r *Repository[T]) GetByID(id uint) (*T, error) {
 	logger.Debug().Uint("id", id).Msg("getting entity by id")
+	db := datastore.Get()
 
 	var entity T
-	if err := r.db.First(&entity, id).Error; err != nil {
+	if err := db.First(&entity, id).Error; err != nil {
 		return nil, fmt.Errorf("get by id %d: %w", id, err)
 	}
 	return &entity, nil
@@ -33,9 +33,10 @@ func (r *Repository[T]) GetByID(id uint) (*T, error) {
 
 func (r *Repository[T]) List() ([]T, error) {
 	logger.Debug().Msg("listing entities")
+	db := datastore.Get()
 
 	var entities []T
-	if err := r.db.Find(&entities).Error; err != nil {
+	if err := db.Find(&entities).Error; err != nil {
 		return nil, fmt.Errorf("list: %w", err)
 	}
 
@@ -45,12 +46,14 @@ func (r *Repository[T]) List() ([]T, error) {
 
 func (r *Repository[T]) Update(entity *T) error {
 	logger.Debug().Msg("updating entity")
-	return r.db.Save(entity).Error
+	db := datastore.Get()
+	return db.Save(entity).Error
 }
 
 func (r *Repository[T]) Delete(id uint) error {
 	logger.Debug().Uint("id", id).Msg("deleting entity")
-
+	db := datastore.Get()
+	
 	var entity T
-	return r.db.Delete(&entity, id).Error
+	return db.Delete(&entity, id).Error
 }

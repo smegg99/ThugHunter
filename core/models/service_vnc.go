@@ -1,4 +1,4 @@
-// core/models/crawler_service_vnc.go
+// core/models/scraper_service_vnc.go
 package models
 
 type VNCService struct {

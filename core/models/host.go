@@ -1,59 +1,58 @@
-// core/models/crawler_host.go
+// core/models/scraper_host.go
 package models
 
 import (
 	"strings"
-	"time"
 
 	"gorm.io/gorm"
 )
 
 type Host struct {
-	ID               uint              `gorm:"primaryKey" json:"id"`
-	IP               string            `gorm:"uniqueIndex;not null" json:"ip"`
-	City             string            `json:"city"`
-	Region           string            `json:"region"`
-	CountryCode      string            `json:"country_code"`
-	OS               string            `json:"os"`
-	Hardware         string            `json:"hardware"`
-	VNCServices      []VNCService      `gorm:"foreignKey:HostID" json:"vnc_services"`
-	RDPServices      []RDPService      `gorm:"foreignKey:HostID" json:"rdp_services"`
-	SPICEServices    []SPICEService    `gorm:"foreignKey:HostID" json:"spice_services"`
-	PKCameraServices []PKCameraService `gorm:"foreignKey:HostID" json:"pkcamera_services"`
-	CreatedAt        time.Time         `json:"created_at"`
-	UpdatedAt        time.Time         `json:"updated_at"`
-	DeletedAt        gorm.DeletedAt    `gorm:"index" json:"deleted_at,omitempty"`
+	gorm.Model
+	IP          string            `gorm:"uniqueIndex;not null" json:"ip"`
+	City        string            `json:"city"`
+	Region      string            `json:"region"`
+	CountryCode string            `json:"country_code"`
+	OS          string            `json:"os"`
+	Hardware    string            `json:"hardware"`
+	Labels      map[string]string `gorm:"type:json" json:"labels"`
+	Services    map[string]string `gorm:"type:json" json:"services"`
+	Software    map[string]string `gorm:"type:json" json:"software"`
+	// VNCServices      []VNCService      `gorm:"foreignKey:HostID" json:"vnc_services"`
+	// RDPServices      []RDPService      `gorm:"foreignKey:HostID" json:"rdp_services"`
+	// SPICEServices    []SPICEService    `gorm:"foreignKey:HostID" json:"spice_services"`
+	// PKCameraServices []PKCameraService `gorm:"foreignKey:HostID" json:"pkcamera_services"`
 }
 
-func (h *Host) AddService(service Service) {
-	switch s := service.(type) {
-	case *VNCService:
-		h.VNCServices = append(h.VNCServices, *s)
-	case *RDPService:
-		h.RDPServices = append(h.RDPServices, *s)
-	case *SPICEService:
-		h.SPICEServices = append(h.SPICEServices, *s)
-	case *PKCameraService:
-		h.PKCameraServices = append(h.PKCameraServices, *s)
-	}
-}
+// func (h *Host) AddService(service Service) {
+// 	switch s := service.(type) {
+// 	case *VNCService:
+// 		h.VNCServices = append(h.VNCServices, *s)
+// 	case *RDPService:
+// 		h.RDPServices = append(h.RDPServices, *s)
+// 	case *SPICEService:
+// 		h.SPICEServices = append(h.SPICEServices, *s)
+// 	case *PKCameraService:
+// 		h.PKCameraServices = append(h.PKCameraServices, *s)
+// 	}
+// }
 
-func (h *Host) GetAllServices() []any {
-	var services []any
-	for _, s := range h.VNCServices {
-		services = append(services, s)
-	}
-	for _, s := range h.RDPServices {
-		services = append(services, s)
-	}
-	for _, s := range h.SPICEServices {
-		services = append(services, s)
-	}
-	for _, s := range h.PKCameraServices {
-		services = append(services, s)
-	}
-	return services
-}
+// func (h *Host) GetAllServices() []any {
+// 	var services []any
+// 	for _, s := range h.VNCServices {
+// 		services = append(services, s)
+// 	}
+// 	for _, s := range h.RDPServices {
+// 		services = append(services, s)
+// 	}
+// 	for _, s := range h.SPICEServices {
+// 		services = append(services, s)
+// 	}
+// 	for _, s := range h.PKCameraServices {
+// 		services = append(services, s)
+// 	}
+// 	return services
+// }
 
 func parseLocationString(locationString string) (city, region, countryCode string) {
 	parts := strings.Split(locationString, ",")

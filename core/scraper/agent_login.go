@@ -1,5 +1,5 @@
-// core/crawler/agent_login.go
-package crawler
+// core/scraper/agent_login.go
+package scraper
 
 import (
 	"fmt"
@@ -23,37 +23,51 @@ const (
 	loginHomePollInterval = 500 * time.Millisecond
 )
 
-func (a *CrawlerAgent) Login(account *models.Account) error {
-	logger.Info().Int("agent_id", a.ID).Str("email", account.Email).Msg("logging in")
+func (a *ScraperAgent) Login(account *models.Account) error {
+	logger.Info().Str("agent", a.Name).Str("email", account.Email).Msg("logging in")
+
+	if account == nil {
+		if a.account == nil {
+			return fmt.Errorf("login: no account provided and agent has no account")
+		}
+		logger.Debug().Str("agent", a.Name).Str("email", a.account.Email).Msg("no account provided, using agent's current account")
+		account = a.account
+	}
+
+	a.SetStatus(AgentStatusBusy)
 
 	page, cursor, err := a.loginOpenPage()
 	if err != nil {
+		a.SetStatus(AgentStatusError)
 		return err
 	}
 	defer page.MustClose()
 
 	if err := a.loginFillFields(page, cursor, account); err != nil {
+		a.SetStatus(AgentStatusError)
 		return err
 	}
 
 	if err := a.loginSubmit(page, cursor, account); err != nil {
+		a.SetStatus(AgentStatusError)
 		return err
 	}
 
 	if err := a.loginAwaitHomePage(page); err != nil {
+		a.SetStatus(AgentStatusError)
 		return err
 	}
 
-	a.loggedIn = true
 	a.account = account
+	a.SetStatus(AgentStatusIdle)
 
-	logger.Info().Int("agent_id", a.ID).Str("email", account.Email).Msg("agent is now logged in")
+	logger.Info().Str("agent", a.Name).Str("email", account.Email).Msg("agent is now logged in")
 
 	return nil
 }
 
-func (a *CrawlerAgent) loginOpenPage() (*rod.Page, *human.Cursor, error) {
-	ep := config.Get().Crawler.Endpoints
+func (a *ScraperAgent) loginOpenPage() (*rod.Page, *human.Cursor, error) {
+	ep := config.Get().Scraper.Endpoints
 	page, cursor, err := a.newTab(ep.LoginEndpoint)
 	if err != nil {
 		return nil, nil, fmt.Errorf("login: %w", err)
@@ -62,7 +76,7 @@ func (a *CrawlerAgent) loginOpenPage() (*rod.Page, *human.Cursor, error) {
 	return page, cursor, nil
 }
 
-func (a *CrawlerAgent) loginFillFields(page *rod.Page, cursor *human.Cursor, account *models.Account) error {
+func (a *ScraperAgent) loginFillFields(page *rod.Page, cursor *human.Cursor, account *models.Account) error {
 	fields := []struct {
 		selector string
 		value    string
@@ -73,7 +87,7 @@ func (a *CrawlerAgent) loginFillFields(page *rod.Page, cursor *human.Cursor, acc
 	}
 
 	for _, f := range fields {
-		logger.Debug().Int("agent_id", a.ID).Str("field", f.label).Msg("filling field")
+		logger.Debug().Str("agent", a.Name).Str("field", f.label).Msg("filling field")
 		el, err := page.Element(f.selector)
 		if err != nil {
 			return fmt.Errorf("login: find %s: %w", f.label, err)
@@ -85,39 +99,39 @@ func (a *CrawlerAgent) loginFillFields(page *rod.Page, cursor *human.Cursor, acc
 	return nil
 }
 
-func (a *CrawlerAgent) loginSubmit(page *rod.Page, cursor *human.Cursor, account *models.Account) error {
-	logger.Debug().Int("agent_id", a.ID).Msg("waiting for Log in button to become clickable")
+func (a *ScraperAgent) loginSubmit(page *rod.Page, cursor *human.Cursor, account *models.Account) error {
+	logger.Debug().Str("agent", a.Name).Msg("waiting for Log in button to become clickable")
 
 	loginBtn, err := page.Timeout(loginBtnTimeout).Element(`button[role="button"][class*="_loginButton_"]:not([disabled])`)
 	if err != nil {
-		logger.Error().Int("agent_id", a.ID).Err(err).Msg("Log in button did not become clickable in time")
+		logger.Error().Str("agent", a.Name).Err(err).Msg("Log in button did not become clickable in time")
 		return fmt.Errorf("login: Log in button timed out: %w", err)
 	}
 
-	logger.Info().Int("agent_id", a.ID).Msg("Log in button is now clickable, clicking it")
+	logger.Info().Str("agent", a.Name).Msg("Log in button is now clickable, clicking it")
 
 	if err := cursor.Click(loginBtn); err != nil {
 		return fmt.Errorf("login: click Log in button: %w", err)
 	}
 
 	logger.Info().
-		Int("agent_id", a.ID).
+		Str("agent", a.Name).
 		Str("email", account.Email).
 		Msg("login submitted")
 
 	return nil
 }
 
-func (a *CrawlerAgent) loginAwaitHomePage(page *rod.Page) error {
-	homeURL := config.Get().Crawler.Endpoints.HomeUrl
+func (a *ScraperAgent) loginAwaitHomePage(page *rod.Page) error {
+	homeURL := config.Get().Scraper.Endpoints.HomeUrl
 
-	logger.Debug().Int("agent_id", a.ID).Str("expected_url", homeURL).Msg("waiting for redirect to home page")
+	logger.Debug().Str("agent", a.Name).Str("expected_url", homeURL).Msg("waiting for redirect to home page")
 
 	deadline := time.Now().Add(loginHomeTimeout)
 	for time.Now().Before(deadline) {
 		info, err := page.Info()
 		if err == nil && info != nil && strings.HasPrefix(info.URL, homeURL) {
-			logger.Info().Int("agent_id", a.ID).Str("url", info.URL).Msg("home page loaded after login")
+			logger.Info().Str("agent", a.Name).Str("url", info.URL).Msg("home page loaded after login")
 			return nil
 		}
 		time.Sleep(loginHomePollInterval)
@@ -130,7 +144,7 @@ func (a *CrawlerAgent) loginAwaitHomePage(page *rod.Page) error {
 	}
 
 	logger.Error().
-		Int("agent_id", a.ID).
+		Str("agent", a.Name).
 		Str("current_url", currentURL).
 		Str("expected_url", homeURL).
 		Msg("home page did not load after login")

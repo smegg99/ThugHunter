@@ -4,7 +4,7 @@ package schema
 
 #Config: {
 	db: {
-		path: string | *"@{datadir:db/thughunter.db}"
+		path: string | *"@{datadir:db/thughuntedb}"
 	} @go(Db)
 	imap: {
 		host:               string | *"localhost"
@@ -14,7 +14,8 @@ package schema
 		mbox:               string | *"INBOX"
 		use_tls:            bool | *true @go(UseTls)
 	} @go(Imap)
-  crawler: {
+  scraper: {
+    custom_query_strings: [...string] | *[] @go(QueryStrings)
     endpoints: {
       home: string @go(HomeUrl)
       register: string @go(RegisterEndpoint)
@@ -24,7 +25,7 @@ package schema
     }
     agents: {
       templates: {
-        email: string | *"crawler{{.ACCOUNT_ID}}@change.me" @go(EmailTemplate)
+        email: string | *"spermokulka{{.ACCOUNT_ID}}@change.me" @go(EmailTemplate)
         password: string | *"{{.RANDOM_NONSENSE}}-{{.ACCOUNT_ID}}" @go(PasswordTemplate)
         organization: string | *"org{{.ACCOUNT_ID}}" @go(OrganizationTemplate)
         first_name: string | *"First{{.ACCOUNT_ID}}" @go(FirstNameTemplate)
@@ -53,12 +54,13 @@ package schema
 }
 
 #LoggerConfig: {
-	verbose:      bool | *false
-	no_color:     bool | *false @go(NoColor)
-	show_caller:  bool | *false @go(ShowCaller)
-	dir:          string | *""
-	max_size_mb:  int & >0 | *10 @go(MaxSizeMb)
-	max_backups:  int & >=0 | *5 @go(MaxBackups)
-	max_age_days: int & >0 | *30 @go(MaxAgeDays)
-	log_name:     string | *"@{datadir:logs}" @go(LogName)
+	verbose:               bool | *false
+	no_color:              bool | *false @go(NoColor)
+	show_caller:           bool | *false @go(ShowCaller)
+	dir:                   string | *""
+	max_size_mb:           int & >0 | *10 @go(MaxSizeMb)
+	max_backups:           int & >=0 | *5 @go(MaxBackups)
+	max_age_days:          int & >0 | *30 @go(MaxAgeDays)
+	log_name:              string | *"@{datadir:logs}" @go(LogName)
+	frontend_console_log:  bool | *true @go(FrontendConsoleLog)
 }

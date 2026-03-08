@@ -1,5 +1,7 @@
-// core/models/crawler_service.go
+// core/models/scraper_service.go
 package models
+
+import "gorm.io/gorm"
 
 type ServiceType string
 
@@ -20,7 +22,7 @@ type Service interface {
 }
 
 type ServiceBase struct {
-	ID          uint        `gorm:"primaryKey" json:"id"`
+	gorm.Model
 	HostID      uint        `gorm:"index;not null" json:"host_id"`
 	IP          string      `json:"ip"`
 	Port        int         `json:"port"`

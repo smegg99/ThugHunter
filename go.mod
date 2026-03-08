@@ -6,6 +6,7 @@ require (
 	cuelang.org/go v0.15.4
 	github.com/DeRuina/timberjack v1.3.9
 	github.com/brianvoe/gofakeit/v6 v6.28.0
+	github.com/dustinkirkland/golang-petname v0.0.0-20260215035315-f0c533e9ce9b
 	github.com/emersion/go-imap/v2 v2.0.0-beta.8
 	github.com/emersion/go-message v0.18.2
 	github.com/fatih/color v1.18.0

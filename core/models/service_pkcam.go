@@ -1,4 +1,4 @@
-// core/models/crawler_service_pkcam.go
+// core/models/scraper_service_pkcam.go
 package models
 
 type PKCameraService struct {

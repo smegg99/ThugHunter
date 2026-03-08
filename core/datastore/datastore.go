@@ -13,13 +13,9 @@ import (
 )
 
 var (
-	db       *DB
+	db       *gorm.DB
 	initOnce sync.Once
 )
-
-type DB struct {
-	*gorm.DB
-}
 
 func allModels() []interface{} {
 	return []interface{}{
@@ -61,13 +57,13 @@ func Initialize(path string) error {
 			return
 		}
 
-		db = &DB{gormDB}
+		db = gormDB
 		logger.Info().Msg("datastore ready")
 	})
 	return initErr
 }
 
-func Get() *DB {
+func Get() *gorm.DB {
 	if db == nil {
 		panic("datastore: not initialised  call Initialize first")
 	}

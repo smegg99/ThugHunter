@@ -9,7 +9,9 @@ import (
 	"smegg.me/thughunter/common/config"
 	"smegg.me/thughunter/common/logger"
 	"smegg.me/thughunter/core/datastore"
+	"smegg.me/thughunter/core/scraper"
 	configservice "smegg.me/thughunter/services/config"
+	loggerservice "smegg.me/thughunter/services/logger"
 	themeservice "smegg.me/thughunter/services/theme"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -33,9 +35,10 @@ func RunApplication() {
 
 	app := application.New(application.Options{
 		Name:        "Thug Hunter",
-		Description: "A tool for hunting down thugs on the internet.",
+		Description: "Program for hunting thugs on the internet, powered by Censys Search in the background.",
 		Services: []application.Service{
 			application.NewService(&configservice.Service{}),
+			application.NewService(&loggerservice.Service{}),
 			application.NewService(&themeservice.Service{}),
 		},
 		Assets: application.AssetOptions{
@@ -99,5 +102,12 @@ func main() {
 		logger.Fatal().Err(err).Msg("datastore")
 	}
 
-	RunApplication()
+	if err := scraper.Initialize(); err != nil {
+		logger.Fatal().Err(err).Msg("scraper")
+	}
+
+	scraper := scraper.Get()
+	scraper.CreateAgent()
+
+	// RunApplication()
 }

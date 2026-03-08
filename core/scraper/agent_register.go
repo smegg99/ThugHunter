@@ -1,5 +1,5 @@
-// core/crawler/agent_register.go
-package crawler
+// core/scraper/agent_register.go
+package scraper
 
 import (
 	"fmt"
@@ -14,6 +14,7 @@ import (
 	"smegg.me/thughunter/core/catcher"
 	"smegg.me/thughunter/core/human"
 	"smegg.me/thughunter/core/models"
+	"smegg.me/thughunter/core/repositories"
 )
 
 const (
@@ -28,16 +29,20 @@ const (
 	registerCodeTimeout        = 2 * time.Minute
 )
 
-func (a *CrawlerAgent) Register() (*models.Account, error) {
-	logger.Info().Int("agent_id", a.ID).Msg("registering account")
+func (a *ScraperAgent) Register() (*models.Account, error) {
+	logger.Info().Str("agent", a.Name).Msg("registering account")
+
+	a.SetStatus(AgentStatusBusy)
 
 	account, err := a.registerCreateAccount()
 	if err != nil {
+		a.SetStatus(AgentStatusError)
 		return nil, err
 	}
 
 	mc, err := catcher.New()
 	if err != nil {
+		a.SetStatus(AgentStatusError)
 		return nil, fmt.Errorf("register: start catcher: %w", err)
 	}
 	defer mc.Close()
@@ -46,34 +51,50 @@ func (a *CrawlerAgent) Register() (*models.Account, error) {
 
 	page, cursor, err := a.registerOpenPage()
 	if err != nil {
+		a.SetStatus(AgentStatusError)
 		return nil, err
 	}
 
 	if err := a.registerFillForm(page, cursor, account); err != nil {
+		a.SetStatus(AgentStatusError)
 		return nil, err
 	}
 
 	if err := a.registerAcceptTerms(page, cursor); err != nil {
+		a.SetStatus(AgentStatusError)
 		return nil, err
 	}
 
 	if err := a.registerSubmit(page, cursor, account); err != nil {
+		a.SetStatus(AgentStatusError)
 		return nil, err
 	}
 
 	if err := a.registerAwaitVerificationPage(page, account); err != nil {
+		a.SetStatus(AgentStatusError)
 		return nil, err
 	}
 
 	if err := a.registerEnterCode(page, cursor, account, codeCh); err != nil {
+		a.SetStatus(AgentStatusError)
 		return nil, err
 	}
 
+	accounts := repositories.GetAccountRepository()
+	if err := accounts.Create(account); err != nil {
+		logger.Error().Err(err).Str("agent", a.Name).Str("email", account.Email).Msg("failed to save registered account to DB")
+		a.SetStatus(AgentStatusError)
+		return nil, fmt.Errorf("register: save account: %w", err)
+	}
+
+	logger.Info().Str("agent", a.Name).Str("email", account.Email).Msg("registered account saved to DB")
+
+	a.SetStatus(AgentStatusIdle)
 	return account, nil
 }
 
-func (a *CrawlerAgent) registerCreateAccount() (*models.Account, error) {
-	accountID := fmt.Sprintf("%d%d", a.ID, time.Now().UnixMilli())
+func (a *ScraperAgent) registerCreateAccount() (*models.Account, error) {
+	accountID := fmt.Sprintf("%s-%d", a.Name, time.Now().UnixMilli())
 	account, err := newAccountFromTemplates(accountID)
 	if err != nil {
 		return nil, fmt.Errorf("register: create account: %w", err)
@@ -86,7 +107,7 @@ type registerCodeResult struct {
 	err  error
 }
 
-func (a *CrawlerAgent) registerListenForCode(mc *catcher.Catcher, email string) <-chan registerCodeResult {
+func (a *ScraperAgent) registerListenForCode(mc *catcher.Catcher, email string) <-chan registerCodeResult {
 	ch := make(chan registerCodeResult, 1)
 	go func() {
 		code, err := mc.WaitForCode(email, registerCodeTimeout)
@@ -95,8 +116,8 @@ func (a *CrawlerAgent) registerListenForCode(mc *catcher.Catcher, email string) 
 	return ch
 }
 
-func (a *CrawlerAgent) registerOpenPage() (*rod.Page, *human.Cursor, error) {
-	ep := config.Get().Crawler.Endpoints
+func (a *ScraperAgent) registerOpenPage() (*rod.Page, *human.Cursor, error) {
+	ep := config.Get().Scraper.Endpoints
 	page, cursor, err := a.newTab(ep.RegisterEndpoint)
 	if err != nil {
 		return nil, nil, fmt.Errorf("register: %w", err)
@@ -105,7 +126,7 @@ func (a *CrawlerAgent) registerOpenPage() (*rod.Page, *human.Cursor, error) {
 	return page, cursor, nil
 }
 
-func (a *CrawlerAgent) registerFillForm(page *rod.Page, cursor *human.Cursor, account *models.Account) error {
+func (a *ScraperAgent) registerFillForm(page *rod.Page, cursor *human.Cursor, account *models.Account) error {
 	fields := []struct {
 		selector string
 		value    string
@@ -120,7 +141,7 @@ func (a *CrawlerAgent) registerFillForm(page *rod.Page, cursor *human.Cursor, ac
 	}
 
 	for _, f := range fields {
-		logger.Debug().Int("agent_id", a.ID).Str("field", f.label).Msg("filling field")
+		logger.Debug().Str("agent", a.Name).Str("field", f.label).Msg("filling field")
 		el, err := page.Element(f.selector)
 		if err != nil {
 			return fmt.Errorf("register: find %s: %w", f.label, err)
@@ -132,8 +153,8 @@ func (a *CrawlerAgent) registerFillForm(page *rod.Page, cursor *human.Cursor, ac
 	return nil
 }
 
-func (a *CrawlerAgent) registerAcceptTerms(page *rod.Page, cursor *human.Cursor) error {
-	logger.Debug().Int("agent_id", a.ID).Msg("ticking terms checkbox")
+func (a *ScraperAgent) registerAcceptTerms(page *rod.Page, cursor *human.Cursor) error {
+	logger.Debug().Str("agent", a.Name).Msg("ticking terms checkbox")
 	termsEl, err := page.Element("#terms-and-conditions")
 	if err != nil {
 		return fmt.Errorf("register: find terms checkbox: %w", err)
@@ -146,23 +167,23 @@ func (a *CrawlerAgent) registerAcceptTerms(page *rod.Page, cursor *human.Cursor)
 	return nil
 }
 
-func (a *CrawlerAgent) registerSubmit(page *rod.Page, cursor *human.Cursor, account *models.Account) error {
-	logger.Debug().Int("agent_id", a.ID).Msg("waiting for Verify Email button to become clickable")
+func (a *ScraperAgent) registerSubmit(page *rod.Page, cursor *human.Cursor, account *models.Account) error {
+	logger.Debug().Str("agent", a.Name).Msg("waiting for Verify Email button to become clickable")
 
 	verifyBtn, err := page.Timeout(registerVerifyBtnTimeout).Element(`button[type="submit"][class*="_registerButton_"]:not([disabled])`)
 	if err != nil {
-		logger.Error().Int("agent_id", a.ID).Err(err).Msg("Verify Email button did not become clickable in time")
+		logger.Error().Str("agent", a.Name).Err(err).Msg("Verify Email button did not become clickable in time")
 		return fmt.Errorf("register: Verify Email button timed out: %w", err)
 	}
 
-	logger.Info().Int("agent_id", a.ID).Msg("Verify Email button is now clickable, clicking it")
+	logger.Info().Str("agent", a.Name).Msg("Verify Email button is now clickable, clicking it")
 
 	if err := cursor.Click(verifyBtn); err != nil {
 		return fmt.Errorf("register: click Verify Email button: %w", err)
 	}
 
 	logger.Info().
-		Int("agent_id", a.ID).
+		Str("agent", a.Name).
 		Str("email", account.Email).
 		Str("first_name", account.FirstName).
 		Str("last_name", account.LastName).
@@ -171,43 +192,43 @@ func (a *CrawlerAgent) registerSubmit(page *rod.Page, cursor *human.Cursor, acco
 	return nil
 }
 
-func (a *CrawlerAgent) registerAwaitVerificationPage(page *rod.Page, account *models.Account) error {
-	logger.Debug().Int("agent_id", a.ID).Msg("waiting for email verification page to load")
+func (a *ScraperAgent) registerAwaitVerificationPage(page *rod.Page, account *models.Account) error {
+	logger.Debug().Str("agent", a.Name).Msg("waiting for email verification page to load")
 
 	if _, err := page.Timeout(registerVerifyPageTimeout).Element(`div[aria-label="Verify check email page"]`); err != nil {
-		logger.Error().Int("agent_id", a.ID).Err(err).Msg("email verification page did not appear in time")
+		logger.Error().Str("agent", a.Name).Err(err).Msg("email verification page did not appear in time")
 		return fmt.Errorf("register: email verification page timed out: %w", err)
 	}
 
-	logger.Info().Int("agent_id", a.ID).Msg("email verification page loaded, waiting for OTP code input")
+	logger.Info().Str("agent", a.Name).Msg("email verification page loaded, waiting for OTP code input")
 
 	if _, err := page.Timeout(registerOTPInputTimeout).Element(`input[data-radix-otp-input][data-radix-index="0"]`); err != nil {
-		logger.Error().Int("agent_id", a.ID).Err(err).Msg("OTP code input not found")
+		logger.Error().Str("agent", a.Name).Err(err).Msg("OTP code input not found")
 		return fmt.Errorf("register: OTP code input not found: %w", err)
 	}
 
 	if _, err := page.Timeout(registerContinueBtnTimeout).Element(`button[type="submit"][class*="_continueButton_"]`); err != nil {
-		logger.Error().Int("agent_id", a.ID).Err(err).Msg("Continue button not found")
+		logger.Error().Str("agent", a.Name).Err(err).Msg("Continue button not found")
 		return fmt.Errorf("register: Continue button not found: %w", err)
 	}
 
 	logger.Info().
-		Int("agent_id", a.ID).
+		Str("agent", a.Name).
 		Str("email", account.Email).
 		Msg("email verification page ready, awaiting 6-digit code entry")
 
 	return nil
 }
 
-func (a *CrawlerAgent) registerEnterCode(page *rod.Page, cursor *human.Cursor, account *models.Account, codeCh <-chan registerCodeResult) error {
-	logger.Debug().Int("agent_id", a.ID).Msg("waiting for verification code from catcher")
+func (a *ScraperAgent) registerEnterCode(page *rod.Page, cursor *human.Cursor, account *models.Account, codeCh <-chan registerCodeResult) error {
+	logger.Debug().Str("agent", a.Name).Msg("waiting for verification code from catcher")
 
 	cr := <-codeCh
 	if cr.err != nil {
 		return fmt.Errorf("register: wait for code: %w", cr.err)
 	}
 
-	logger.Debug().Int("agent_id", a.ID).Str("code", cr.code).Msg("entering verification code")
+	logger.Debug().Str("agent", a.Name).Str("code", cr.code).Msg("entering verification code")
 
 	otpInput, err := page.Element(`input[data-radix-otp-input][data-radix-index="0"]`)
 	if err != nil {
@@ -227,7 +248,7 @@ func (a *CrawlerAgent) registerEnterCode(page *rod.Page, cursor *human.Cursor, a
 	}
 
 	logger.Info().
-		Int("agent_id", a.ID).
+		Str("agent", a.Name).
 		Str("email", account.Email).
 		Msg("verification code entered and submitted")
 
