@@ -120,6 +120,18 @@ func (c Country) String() string {
 	return string(c)
 }
 
+type OperatingSystem string
+
+const (
+	OperatingSystemWindows OperatingSystem = "Windows"
+	OperatingSystemLinux   OperatingSystem = "Linux"
+	OperatingSystemUnix   OperatingSystem = "Unix"
+)
+
+func (os OperatingSystem) String() string {
+	return string(os)
+}
+
 // Resolve renders the QueryString template with the given data.
 func ResolveVNCSearchQueryForCountry(country Country) (string, error) {
 	type QueryTemplate struct {

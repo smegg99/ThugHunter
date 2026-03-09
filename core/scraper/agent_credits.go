@@ -2,16 +2,16 @@
 package scraper
 
 import (
-	"fmt"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
+"fmt"
+"regexp"
+"strconv"
+"strings"
+"time"
 
-	"github.com/go-rod/rod"
+"github.com/go-rod/rod"
 
-	"smegg.me/thughunter/common/config"
-	"smegg.me/thughunter/common/logger"
+"smegg.me/thughunter/common/config"
+"smegg.me/thughunter/common/logger"
 )
 
 type ScraperCredits struct {
@@ -20,10 +20,13 @@ type ScraperCredits struct {
 }
 
 const (
-	creditsPageTimeout    = 30 * time.Second
-	creditsProgressBarSel = `[data-testid="credit-usage-progress-bar"]`
+creditsPageTimeout    = 30 * time.Second
+creditsProgressBarSel = `[data-testid="credit-usage-progress-bar"]`
 )
 
+var creditsRe = regexp.MustCompile(`(\d+)\s*/\s*(\d+)\s*available`)
+
+// UpdateCredits fetches the current credit balance from the billing page.
 func (a *ScraperAgent) UpdateCredits() (*ScraperCredits, error) {
 	if !a.IsLoggedIn() {
 		logger.Warn().Str("agent", a.Name).Msg("update credits: agent not logged in, logging in first")
@@ -34,41 +37,39 @@ func (a *ScraperAgent) UpdateCredits() (*ScraperCredits, error) {
 
 	logger.Info().Str("agent", a.Name).Msg("updating credits")
 
-	a.SetStatus(AgentStatusBusy)
+	return runTaskResult(a, func() (*ScraperCredits, error) {
+		page, err := a.creditsOpenPage()
+		if err != nil {
+			return nil, err
+		}
+		defer page.MustClose()
 
-	page, err := a.creditsOpenPage()
-	if err != nil {
-		a.SetStatus(AgentStatusError)
-		return nil, err
-	}
-	defer page.MustClose()
+		if err := a.creditsAwaitProgressBar(page); err != nil {
+			return nil, err
+		}
 
-	if err := a.creditsAwaitProgressBar(page); err != nil {
-		return nil, err
-	}
+		text, err := a.creditsExtractHeading(page)
+		if err != nil {
+			return nil, err
+		}
 
-	text, err := a.creditsExtractHeading(page)
-	if err != nil {
-		return nil, err
-	}
+		credits, err := parseCredits(text)
+		if err != nil {
+			return nil, fmt.Errorf("update credits: %w", err)
+		}
 
-	credits, err := parseCredits(text)
-	if err != nil {
-		return nil, fmt.Errorf("update credits: %w", err)
-	}
+		logger.Info().
+			Str("agent", a.Name).
+			Int("current", credits.Current).
+			Int("total", credits.Total).
+			Msg("credits parsed")
 
-	logger.Info().
-		Str("agent", a.Name).
-		Int("current", credits.Current).
-		Int("total", credits.Total).
-		Msg("credits parsed")
+		if a.account != nil {
+			a.account.CreditsAmount = uint(credits.Current)
+		}
 
-	if a.account != nil {
-		a.account.CreditsAmount = uint(credits.Current)
-	}
-
-	a.SetStatus(AgentStatusIdle)
-	return credits, nil
+		return credits, nil
+	})
 }
 
 func (a *ScraperAgent) creditsOpenPage() (*rod.Page, error) {
@@ -82,9 +83,8 @@ func (a *ScraperAgent) creditsOpenPage() (*rod.Page, error) {
 func (a *ScraperAgent) creditsAwaitProgressBar(page *rod.Page) error {
 	logger.Debug().Str("agent", a.Name).Msg("waiting for credit usage progress bar")
 
-	_, err := page.Timeout(creditsPageTimeout).Element(creditsProgressBarSel)
-	if err != nil {
-		return fmt.Errorf("update credits: credit progress bar not found: %w", err)
+	if _, err := awaitElement(page, creditsProgressBarSel, creditsPageTimeout, "update credits: progress bar"); err != nil {
+		return err
 	}
 
 	logger.Debug().Str("agent", a.Name).Msg("credit usage progress bar found")
@@ -96,22 +96,22 @@ func (a *ScraperAgent) creditsExtractHeading(page *rod.Page) (string, error) {
 
 	bar, err := page.Element(creditsProgressBarSel)
 	if err != nil {
-		return "", fmt.Errorf("update credits: read credit heading: progress bar not found: %w", err)
+		return "", fmt.Errorf("update credits: progress bar: %w: %w", ErrElementNotFound, err)
 	}
 
 	card, err := bar.Parent()
 	if err != nil {
-		return "", fmt.Errorf("update credits: read credit heading: parent not found: %w", err)
+		return "", fmt.Errorf("update credits: parent card: %w: %w", ErrElementNotFound, err)
 	}
 
 	h3, err := card.Element("h3")
 	if err != nil {
-		return "", fmt.Errorf("update credits: read credit heading: h3 not found: %w", err)
+		return "", fmt.Errorf("update credits: heading: %w: %w", ErrElementNotFound, err)
 	}
 
 	text, err := h3.Text()
 	if err != nil {
-		return "", fmt.Errorf("update credits: read credit heading: text extraction failed: %w", err)
+		return "", fmt.Errorf("update credits: heading text: %w: %w", ErrParseFailed, err)
 	}
 
 	text = strings.TrimSpace(text)
@@ -119,22 +119,20 @@ func (a *ScraperAgent) creditsExtractHeading(page *rod.Page) (string, error) {
 	return text, nil
 }
 
-var creditsRe = regexp.MustCompile(`(\d+)\s*/\s*(\d+)\s*available`)
-
 func parseCredits(text string) (*ScraperCredits, error) {
 	matches := creditsRe.FindStringSubmatch(text)
 	if len(matches) != 3 {
-		return nil, fmt.Errorf("parse credits: unexpected format %q", text)
+		return nil, fmt.Errorf("%w: unexpected format %q", ErrParseFailed, text)
 	}
 
 	current, err := strconv.Atoi(matches[1])
 	if err != nil {
-		return nil, fmt.Errorf("parse credits current: %w", err)
+		return nil, fmt.Errorf("%w: current credits: %w", ErrParseFailed, err)
 	}
 
 	total, err := strconv.Atoi(matches[2])
 	if err != nil {
-		return nil, fmt.Errorf("parse credits total: %w", err)
+		return nil, fmt.Errorf("%w: total credits: %w", ErrParseFailed, err)
 	}
 
 	return &ScraperCredits{

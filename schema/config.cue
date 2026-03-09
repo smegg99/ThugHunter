@@ -17,7 +17,7 @@ package schema
   scraper: {
     custom_query_strings: [...string] | *[] @go(QueryStrings)
     endpoints: {
-      home: string @go(HomeUrl)
+      home: string @go(HomeEndpoint)
       register: string @go(RegisterEndpoint)
       login: string @go(LoginEndpoint)
       search: string @go(SearchEndpoint)

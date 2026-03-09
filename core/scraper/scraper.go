@@ -69,7 +69,7 @@ func (c *Scraper) CreateAgent() (*ScraperAgent, error) {
 	cfg := config.Get()
 	maxAgents := int(cfg.Scraper.Agents.MaxAgents)
 	if len(c.agents) >= maxAgents {
-		return nil, fmt.Errorf("max agents reached (%d)", maxAgents)
+		return nil, fmt.Errorf("%w (%d)", ErrMaxAgentsReached, maxAgents)
 	}
 
 	var name string
@@ -81,7 +81,7 @@ func (c *Scraper) CreateAgent() (*ScraperAgent, error) {
 		}
 	}
 	if name == "" {
-		return nil, fmt.Errorf("failed to generate unique agent name after %d attempts", maxPetnameAttempts)
+		return nil, fmt.Errorf("%w after %d attempts", ErrNameGenerationFailed, maxPetnameAttempts)
 	}
 
 	agent := newScraperAgent(name)
@@ -97,7 +97,7 @@ func (c *Scraper) DeleteAgent(name string) error {
 
 	agent, ok := c.agents[name]
 	if !ok {
-		return fmt.Errorf("agent %q not found", name)
+		return fmt.Errorf("%w: %q", ErrAgentNotFound, name)
 	}
 
 	if err := agent.Close(); err != nil {

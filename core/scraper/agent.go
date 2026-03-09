@@ -15,8 +15,10 @@ import (
 	"smegg.me/thughunter/core/human"
 	"smegg.me/thughunter/core/models"
 	"smegg.me/thughunter/core/unrevealed"
+)
 
-	petname "github.com/dustinkirkland/golang-petname"
+const (
+	CreditsAmountPerQuery = 5 // How many credits each search query costs. Idk if this is needed because I just opted to update credits after each search, but it might be useful for logging or future features.
 )
 
 type AgentStatus string
@@ -28,110 +30,11 @@ const (
 	AgentStatusError   AgentStatus = "error"   // When the agent has encountered an error that prevents it from functioning properly
 )
 
-// PetnameWords controls how many words the petname generator uses (e.g. 2 = "bold-frog").
-var PetnameWords = 2
-
-// PetnameSeparator is the separator between petname words.
-var PetnameSeparator = "-"
-
 type ScraperAgent struct {
-	Name     string
-	status   AgentStatus
-	browser  *unrevealed.Browser
-	account  *models.Account
-}
-
-// generatePetname returns a random petname with the configured word count and separator.
-func generatePetname() string {
-	return petname.Generate(PetnameWords, PetnameSeparator)
-}
-
-func newScraperAgent(name string) *ScraperAgent {
-	logger.Debug().Str("agent", name).Msg("creating agent")
-	return &ScraperAgent{
-		Name:   name,
-		status: AgentStatusOffline,
-	}
-}
-
-func (a *ScraperAgent) ensureBrowser() error {
-	if a.browser != nil {
-		return nil
-	}
-
-	logger.Debug().Str("agent", a.Name).Msg("launching browser for agent")
-
-	cfg := config.Get()
-	browser, err := unrevealed.New(context.Background(), unrevealed.Config{
-		ChromePath: cfg.Scraper.BrowserBinaryPath,
-		Headless:   false,
-	})
-	if err != nil {
-		a.SetStatus(AgentStatusError)
-		return fmt.Errorf("agent %s: launch browser: %w", a.Name, err)
-	}
-
-	a.browser = browser
-	logger.Debug().Str("agent", a.Name).Msg("browser launched for agent")
-	return nil
-}
-
-func (a *ScraperAgent) newTab(url string) (*rod.Page, *human.Cursor, error) {
-	if err := a.ensureBrowser(); err != nil {
-		return nil, nil, err
-	}
-
-	logger.Debug().Str("agent", a.Name).Str("url", url).Msg("opening new tab")
-
-	var page *rod.Page
-	pages, err := a.browser.Pages()
-	if err == nil {
-		for _, p := range pages {
-			info, _ := p.Info()
-			if info != nil && (info.URL == "" || info.URL == "about:blank" ||
-				info.URL == "chrome://newtab/" || info.URL == "chrome://new-tab-page/") {
-				page = p
-				break
-			}
-		}
-	}
-	if page == nil {
-		page, err = a.browser.Page(proto.TargetCreateTarget{URL: "about:blank"})
-		if err != nil {
-			return nil, nil, fmt.Errorf("new page: %w", err)
-		}
-	}
-
-	if err := unrevealed.Stealth(page); err != nil {
-		page.MustClose()
-		return nil, nil, fmt.Errorf("apply stealth: %w", err)
-	}
-
-	if err := page.Navigate(url); err != nil {
-		page.MustClose()
-		return nil, nil, fmt.Errorf("navigate to %s: %w", url, err)
-	}
-
-	if err := page.WaitLoad(); err != nil {
-		page.MustClose()
-		return nil, nil, fmt.Errorf("wait load %s: %w", url, err)
-	}
-
-	time.Sleep(time.Duration(800+rand.IntN(1200)) * time.Millisecond)
-
-	logger.Debug().Str("agent", a.Name).Str("url", url).Msg("page loaded")
-
-	cursor := human.New(page, func(c *human.Config) {
-		c.Direct = false
-		c.Hesitation = 0.01
-		c.MicroPause = 0.01
-		c.Steadiness = 0.9
-		c.ClickHold = [2]int{25, 60}
-		c.ClickDwell = [2]int{50, 120}
-		c.TypeDelay = [2]int{15, 55}
-		c.ThinkPause = 0.01
-	})
-	return page, cursor, nil
+	Name    string
+	status  AgentStatus
+	browser *unrevealed.Browser
+	account *models.Account
 }
 
 func (a *ScraperAgent) Status() AgentStatus {
@@ -160,13 +63,11 @@ func (a *ScraperAgent) SetStatus(status AgentStatus) {
 		logger.Debug().Str("agent", a.Name).Str("status", string(status)).Msg("setting agent status")
 	case AgentStatusError:
 		logger.Error().Str("agent", a.Name).Str("status", string(status)).Msg("agent entered error status")
-		a.SetStatus(status)
-		return
 	default:
 		logger.Warn().Str("agent", a.Name).Str("status", string(status)).Msg("attempted to set invalid agent status")
 		return
 	}
-	a.SetStatus(status)
+	a.status = status
 }
 
 func (a *ScraperAgent) IsLoggedIn() bool {
@@ -191,5 +92,103 @@ func (a *ScraperAgent) Close() error {
 	}
 
 	logger.Info().Str("agent", a.Name).Msg("scraper agent closed")
+	return nil
+}
+
+func newScraperAgent(name string) *ScraperAgent {
+	logger.Debug().Str("agent", name).Msg("creating agent")
+	return &ScraperAgent{
+		Name:   name,
+		status: AgentStatusOffline,
+	}
+}
+
+func (a *ScraperAgent) ensureBrowser() error {
+	if a.browser != nil {
+		return nil
+	}
+
+	logger.Debug().Str("agent", a.Name).Msg("launching browser for agent")
+
+	cfg := config.Get()
+	browser, err := unrevealed.New(context.Background(), unrevealed.Config{
+		ChromePath: cfg.Scraper.BrowserBinaryPath,
+		Headless:   false,
+	})
+	if err != nil {
+		a.SetStatus(AgentStatusError)
+		return fmt.Errorf("agent %s: %w: %w", a.Name, ErrBrowserLaunchFailed, err)
+	}
+
+	a.browser = browser
+	logger.Debug().Str("agent", a.Name).Msg("browser launched for agent")
+	return nil
+}
+
+func (a *ScraperAgent) newTab(url string) (*rod.Page, *human.Cursor, error) {
+	if err := a.ensureBrowser(); err != nil {
+		return nil, nil, err
+	}
+
+	logger.Debug().Str("agent", a.Name).Str("url", url).Msg("opening new tab")
+
+	page, err := a.reuseOrCreatePage()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := a.navigatePage(page, url); err != nil {
+		page.MustClose()
+		return nil, nil, err
+	}
+
+	cursor := human.New(page, func(c *human.Config) {
+		c.Direct = false
+		c.Hesitation = 0.01
+		c.MicroPause = 0.01
+		c.Steadiness = 0.9
+		c.ClickHold = [2]int{25, 60}
+		c.ClickDwell = [2]int{50, 120}
+		c.TypeDelay = [2]int{15, 55}
+		c.ThinkPause = 0.01
+	})
+	return page, cursor, nil
+}
+
+func (a *ScraperAgent) reuseOrCreatePage() (*rod.Page, error) {
+	pages, err := a.browser.Pages()
+	if err == nil {
+		for _, p := range pages {
+			info, _ := p.Info()
+			if info != nil && (info.URL == "" || info.URL == "about:blank" ||
+				info.URL == "chrome://newtab/" || info.URL == "chrome://new-tab-page/") {
+				return p, nil
+			}
+		}
+	}
+
+	page, err := a.browser.Page(proto.TargetCreateTarget{URL: "about:blank"})
+	if err != nil {
+		return nil, fmt.Errorf("new page: %w", err)
+	}
+	return page, nil
+}
+
+func (a *ScraperAgent) navigatePage(page *rod.Page, url string) error {
+	if err := unrevealed.Stealth(page); err != nil {
+		return fmt.Errorf("apply stealth: %w", err)
+	}
+
+	if err := page.Navigate(url); err != nil {
+		return fmt.Errorf("%w: %s: %w", ErrNavigationFailed, url, err)
+	}
+
+	if err := page.WaitLoad(); err != nil {
+		return fmt.Errorf("%w: wait load %s: %w", ErrNavigationFailed, url, err)
+	}
+
+	time.Sleep(time.Duration(800+rand.IntN(1200)) * time.Millisecond)
+
+	logger.Debug().Str("agent", a.Name).Str("url", url).Msg("page loaded")
 	return nil
 }

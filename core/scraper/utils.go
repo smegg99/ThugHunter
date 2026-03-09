@@ -1,4 +1,4 @@
-// core/agent/utils.go
+// core/scraper/utils.go
 package scraper
 
 import (
@@ -8,12 +8,19 @@ import (
 	"strings"
 
 	"github.com/brianvoe/gofakeit/v6"
+	petname "github.com/dustinkirkland/golang-petname"
 
 	"smegg.me/thughunter/common/config"
 	"smegg.me/thughunter/common/logger"
 	"smegg.me/thughunter/common/templating"
 	"smegg.me/thughunter/core/models"
 )
+
+// PetnameWords controls how many words the petname generator uses (e.g. 2 = "bold-frog").
+var PetnameWords = 2
+
+// PetnameSeparator is the separator between petname words.
+var PetnameSeparator = "-"
 
 const (
 	upper    = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -22,6 +29,11 @@ const (
 	specials = `~!@#$%^&*()_+{}":;[]'`
 	allChars = upper + lower + digits + specials
 )
+
+// generatePetname returns a random petname with the configured word count and separator.
+func generatePetname() string {
+	return petname.Generate(PetnameWords, PetnameSeparator)
+}
 
 func generateRandomNonsense() string {
 	length := 12
@@ -73,7 +85,11 @@ type templateData struct {
 	JOB_TITLE  string
 	BUZZWORD   string
 	DOMAIN     string
+	DIGITS_1   string
+	DIGITS_2   string
+	DIGITS_3   string
 	DIGITS_4   string
+	DIGITS_5   string
 	DIGITS_6   string
 }
 
@@ -101,7 +117,11 @@ func newAccountFromTemplates(accountID string) (*models.Account, error) {
 		JOB_TITLE:  faker.JobTitle(),
 		BUZZWORD:   faker.BuzzWord(),
 		DOMAIN:     faker.DomainName(),
+		DIGITS_1:   fmt.Sprintf("%d", faker.IntRange(0, 9)),
+		DIGITS_2:   fmt.Sprintf("%02d", faker.IntRange(0, 99)),
+		DIGITS_3:   fmt.Sprintf("%03d", faker.IntRange(0, 999)),
 		DIGITS_4:   fmt.Sprintf("%04d", faker.IntRange(0, 9999)),
+		DIGITS_5:   fmt.Sprintf("%05d", faker.IntRange(0, 99999)),
 		DIGITS_6:   fmt.Sprintf("%06d", faker.IntRange(0, 999999)),
 	}
 

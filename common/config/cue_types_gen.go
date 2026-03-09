@@ -25,7 +25,7 @@ type Config struct {
 		QueryStrings []any/* CUE closed list */ `json:"custom_query_strings"`
 
 		Endpoints struct {
-			HomeUrl string `json:"home"`
+			HomeEndpoint string `json:"home"`
 
 			RegisterEndpoint string `json:"register"`
 
