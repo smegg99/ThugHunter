@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/thethughunter.svg" alt="ThugHunter" width="640">
+  <img src="assets/thethughunter.svg" alt="ThugHunter" width="500">
 </p>
 
 ThugHunter is a desktop application that aggregates various publicly accessible hosts from Censys. Currently focused on VNC, with support for additional protocols planned.
