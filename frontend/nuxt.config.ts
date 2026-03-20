@@ -2,23 +2,28 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 import wailsPlugin from '@wailsio/runtime/plugins/vite'
+import svgLoader from 'vite-svg-loader'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const bindingsDir = path.resolve(__dirname, 'bindings')
 
-const localeFiles = ['common.json']
+const localeFiles = ['common.json', 'routes.json', 'settings.json', 'agents.json', 'accounts.json', 'home.json', 'browse.json']
 
 export default defineNuxtConfig({
   app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       style: [
         {
           // Prevent flash before Vuetify/JS loads. The actual theme is
           // applied from the backend config once the app mounts.
-          innerHTML: `html, body { background-color: #F5F7FF; }`,
+          innerHTML: `html, body { background-color: #000000; }`,
         },
       ],
     },
+  },
+  experimental: {
+    payloadExtraction: true,
   },
   modules: [
     '@unocss/nuxt',
@@ -28,12 +33,12 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
   ],
   build: {
-    transpile: ['vuetify'],
+    transpile: ['vuetify', '@material/material-color-utilities'],
   },
   ssr: false,
   devServer: { port: 9245 },
   devtools: { enabled: true },
-  css: ['~/assets/css/fonts.css'],
+  css: ['~/assets/css/fonts.css', '~/assets/css/scrollbar.css', '~/assets/css/skeleton.css', '~/assets/css/transitions.css', '~/assets/css/vuetify.scss'],
   features: {
     inlineStyles: false,
   },
@@ -51,12 +56,20 @@ export default defineNuxtConfig({
         autoImport: true,
         styles: { configFile: 'assets/css/vuetify.scss' },
       }),
+      svgLoader({
+        defaultImport: 'component',
+      }),
     ],
     vue: {
       template: {
         transformAssetUrls,
       },
     },
+    optimizeDeps: {
+      include: [
+        '@wailsio/runtime',
+      ]
+    }
   },
   eslint: {
     config: {
@@ -64,7 +77,7 @@ export default defineNuxtConfig({
     },
   },
   i18n: {
-    strategy: 'prefix',
+    strategy: 'no_prefix',
     defaultLocale: 'en',
 
     langDir: 'locales',
@@ -73,7 +86,7 @@ export default defineNuxtConfig({
       {
         code: 'en',
         name: 'English',
-        language: 'en-US',
+        language: 'en-GB',
         files: localeFiles.map(f => `en/${f}`),
       },
       {

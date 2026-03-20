@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 31.999999 31.999999"
+   version="1.1"
+   id="svg8"
+   sodipodi:docname="thughunter-logo-tray-dark-no-badge.svg"
+   width="32"
+   height="32"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     id="namedview8"
+     pagecolor="#505050"
+     bordercolor="#f4f4f4fff"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="12.831847"
+     inkscape:cx="16.794153"
+     inkscape:cy="9.741388"
+     inkscape:window-width="1920"
+     inkscape:window-height="1044"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg8" />
+  <path
+     d="M 8.6243078,5.2827727 H 13.575729 L 13.984113,2.3770079 H 0.40837716 L -3.1673284e-8,5.2827727 H 5.1373943 L 3.1641048,19.323427 h 3.4869208 z"
+     id="text1-5"
+     inkscape:label="Thug"
+     style="font-weight:800;font-size:86px;font-family:Helvetica, Arial, sans-serif;letter-spacing:8;fill:#f4f4f4;stroke-width:0.270304"
+     aria-label="THUG"
+     sodipodi:nodetypes="ccccccccc" />
+  <path
+     d="m 10.519831,7.1782846 h 6.935506 l -1.103822,7.8541164 h 7.578531 L 25.033867,7.1782846 H 32 L 28.845603,29.622992 H 21.87947 l 1.275961,-9.07893 H 15.5769 l -1.275961,9.07893 H 7.3654332 Z"
+     id="text2-3"
+     style="font-weight:900;font-size:116px;font-family:'Arial Black', Helvetica, sans-serif;letter-spacing:2;fill:#f4f4f4;fill-opacity:1;stroke-width:0.270304"
+     inkscape:label="badge"
+     aria-label="HUNTER"
+     sodipodi:nodetypes="ccccccccccccc" />
+</svg>

@@ -50,12 +50,58 @@ type Config struct {
 			} `json:"templates"`
 
 			MaxAgents int64 `json:"max_agents"`
+
+			MaxRegisterRetries int64 `json:"max_register_retries"`
 		} `json:"agents"`
 
 		BrowserBinaryPath string `json:"browser_binary_path"`
 
 		VirtualDisplay bool `json:"virtual_display"`
+
+		MinimalBrowser bool `json:"minimal_browser"`
 	} `json:"scraper"`
+
+	Scanner struct {
+		PingMode string `json:"ping_mode"`
+
+		IcmpPing bool `json:"icmp_ping"`
+
+		RejectBlankScreenshots bool `json:"reject_blank_screenshots"`
+
+		Workers struct {
+			PingTimeoutSeconds int64 `json:"ping_timeout_seconds"`
+
+			ConnectTimeoutSeconds int64 `json:"connect_timeout_seconds"`
+
+			BannerTimeoutSeconds int64 `json:"banner_timeout_seconds"`
+
+			ScreenshotTimeoutSeconds int64 `json:"screenshot_timeout_seconds"`
+
+			ScreenshotDelaySeconds int64 `json:"screenshot_delay_seconds"`
+
+			ScreenshotPauseSeconds int64 `json:"screenshot_pause_seconds"`
+
+			ScreenshotMaxWorkers int64 `json:"screenshot_max_workers"`
+
+			MaxWorkers int64 `json:"max_workers"`
+		} `json:"workers"`
+
+		Templates struct {
+			VncCommandTemplate string `json:"vnc_command"`
+
+			RdpCommandTemplate string `json:"rdp_command"`
+
+			SpiceCommandTemplate string `json:"spice_command"`
+
+			SshCommandTemplate string `json:"ssh_command"`
+
+			HttpCommandTemplate string `json:"http_command"`
+
+			HttpsCommandTemplate string `json:"https_command"`
+
+			ScreenshotCommandTemplate string `json:"screenshot_command"`
+		} `json:"templates"`
+	} `json:"scanner"`
 
 	Logger LoggerConfig `json:"logger"`
 
@@ -90,6 +136,10 @@ type Preferences struct {
 	AccentMode string `json:"accent_mode"`
 
 	AccentColor string `json:"accent_color"`
+
+	CloseToTray bool `json:"close_to_tray"`
+
+	MemoryUnit string `json:"memory_unit"`
 }
 
 type ThemeMode string
@@ -97,3 +147,5 @@ type ThemeMode string
 type LocaleCode string
 
 type AccentMode string
+
+type MemoryUnit string

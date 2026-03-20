@@ -1,6 +1,9 @@
-// core/models/scraper_service_spice.go
+// core/models/service_spice.go
+//
+// SPICE service model.
 package models
 
+// SPICEService stores probe results for a SPICE endpoint.
 type SPICEService struct {
 	ServiceBase
 }

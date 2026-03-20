@@ -1,23 +1,16 @@
 {
-  "routes": {
-    "home": "Home"
-  },
-  "settings": {
-    "language": "Language",
-    "theme": "Theme",
-    "themes": {
-      "auto": "Auto",
-      "light": "Light",
-      "dark": "Dark",
-      "lightHighContrast": "Light HC",
-      "darkHighContrast": "Dark HC"
-    },
-    "accent": "Accent Color",
-    "accentModes": {
-      "auto": "From System",
-      "custom": "Custom"
-    },
-    "currentAccent": "Current accent",
-    "accentWatchNotSupported": "Live accent color detection is not available on this platform. Use custom mode to set a static color."
+  "timeAgo": {
+    "justNow": "just now",
+    "past": "{count} {unit} ago",
+    "future": "in {count} {unit}",
+    "units": {
+      "year": "year | years",
+      "month": "month | months",
+      "week": "week | weeks",
+      "day": "day | days",
+      "hour": "hour | hours",
+      "minute": "minute | minutes",
+      "second": "second | seconds"
+    }
   }
 }

@@ -3,6 +3,7 @@ package scraper
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/go-rod/rod"
@@ -24,22 +25,31 @@ func (a *ScraperAgent) searchParseHostCard(card *rod.Element) (*models.Host, err
 
 	host := models.NewHost(ip, details["Location"], details["OS"], details["Network (AS)"])
 
-	host.Labels = make(map[string]string, len(labels))
-	for _, l := range labels {
-		host.Labels[l] = l
-	}
-
-	host.Services = make(map[string]string, len(services))
-	for _, s := range services {
-		host.Services[s] = s
-	}
-
-	host.Software = make(map[string]string, len(software))
-	for _, s := range software {
-		host.Software[s] = s
-	}
+	host.Labels = labels
+	host.Services = groupServicePorts(services)
+	host.Software = software
 
 	return host, nil
+}
+
+// groupServicePorts converts a list of "port / service" strings into a map of
+// service name → port list. Entries without a " / " separator are stored with
+// an empty port list.
+func groupServicePorts(raw []string) map[string][]string {
+	result := make(map[string][]string, len(raw))
+	for _, entry := range raw {
+		if port, name, ok := strings.Cut(entry, " / "); ok {
+			if _, err := strconv.Atoi(port); err != nil {
+				continue // skip non-numeric ports (e.g. "Many")
+			}
+			result[name] = append(result[name], port)
+		} else {
+			if _, exists := result[entry]; !exists {
+				result[entry] = nil
+			}
+		}
+	}
+	return result
 }
 
 // searchExtractIP gets the IP from the "View X.X.X.X Details" link's title attribute.

@@ -6,8 +6,11 @@ import "smegg.me/thughunter/common/templating"
 type QueryString string
 
 const (
-	BaseVNCQueryString          QueryString = "host.services.vnc.security_types.value:\"1\""
-	BaseVNCByCountryQueryString QueryString = "host.services.vnc.security_types.value:\"1\" and host.location.country:\"{{.COUNTRY_NAME}}\""
+	BaseVNCQueryString                QueryString = "host.services.vnc.security_types.value:\"1\""
+	BaseVNCByCountryQueryString       QueryString = "host.services.vnc.security_types.value:\"1\" and host.location.country:\"{{.COUNTRY_NAME}}\""
+	BaseVNCNativeQueryString          QueryString = "host.operating_system.product: \"Linux\" and not host.services.software.type: \"VIRTUAL_MACHINE\" and not host.services.software.type: \"CONTAINER\" and not host.autonomous_system.name: \"AWS\" and not host.autonomous_system.name: \"GCP\" and not host.autonomous_system.name: \"AZURE\" and host.services.vnc.security_types.name: \"None\""
+	BaseVNCNativeByCountryQueryString QueryString = BaseVNCNativeQueryString + " and host.location.country:\"{{.COUNTRY_NAME}}\""
+	BaseCameraNoAuthQueryString       QueryString = "host.services: (hardware.type: \"CAMERA\" and not endpoints.http.headers.key: \"Authorization\")"
 )
 
 type Country string
@@ -120,24 +123,113 @@ func (c Country) String() string {
 	return string(c)
 }
 
-type OperatingSystem string
-
-const (
-	OperatingSystemWindows OperatingSystem = "Windows"
-	OperatingSystemLinux   OperatingSystem = "Linux"
-	OperatingSystemUnix   OperatingSystem = "Unix"
-)
-
-func (os OperatingSystem) String() string {
-	return string(os)
+// AllCountries lists every Country constant for query generation.
+var AllCountries = []Country{
+	CountryUnitedStates, CountryGermany, CountrySouthKorea, CountryFrance,
+	CountryUnitedKingdom, CountryChina, CountryItaly, CountryJapan,
+	CountryBrazil, CountryCanada, CountryHongKong, CountryIndia,
+	CountryNetherlands, CountryAustralia, CountrySingapore, CountryRussia,
+	CountrySpain, CountryDenmark, CountryPoland, CountryTaiwan,
+	CountrySweden, CountryArgentina, CountryIreland, CountryThailand,
+	CountrySouthAfrica, CountryMorocco, CountryVietnam, CountryBelgium,
+	CountryPakistan, CountryIndonesia, CountryTurkey, CountryMexico,
+	CountrySwitzerland, CountryRomania, CountryNewZealand, CountryFinland,
+	CountryColombia, CountryAustria, CountryUkraine, CountryMalaysia,
+	CountryHungary, CountryEgypt, CountryCzechRepublic, CountryBulgaria,
+	CountryGreece, CountryPortugal, CountryTunisia, CountryChile,
+	CountrySaudiArabia, CountryAlgeria, CountryUnitedArabEmirates, CountryNorway,
+	CountryIsrael, CountryPhilippines, CountryKazakhstan, CountryVenezuela,
+	CountrySerbia, CountryBangladesh, CountryEcuador, CountryCroatia,
+	CountryLatvia, CountryIran, CountryPanama, CountryPeru,
+	CountryMoldova, CountryLithuania, CountrySenegal, CountryPuertoRico,
+	CountrySlovakia, CountryCostaRica, CountryBosniaAndHerzegovina, CountryBelarus,
+	CountryOman, CountryKuwait, CountryUruguay, CountrySlovenia,
+	CountryEstonia, CountryNigeria, CountryKenya, CountryGeorgia,
+	CountryBurkinaFaso, CountryReunion, CountryTrinidadAndTobago, CountryJamaica,
+	CountryIceland, CountryDominicanRepublic, CountryCambodia, CountryPalestinianTerritory,
+	CountryBolivia, CountryLuxembourg, CountryIvoryCoast, CountryMauritius,
+	CountryMartinique, CountryCyprus, CountryBahrain, CountryParaguay,
+	CountryYemen, CountrySriLanka, CountryIraq, CountryGuadeloupe,
 }
 
-// Resolve renders the QueryString template with the given data.
-func ResolveVNCSearchQueryForCountry(country Country) (string, error) {
+// ResolveQueryForCountry renders a per-country query template.
+func ResolveQueryForCountry(query QueryString, country Country) (string, error) {
 	type QueryTemplate struct {
 		COUNTRY_NAME string
 	}
-	return templating.Resolve(string(BaseVNCByCountryQueryString), QueryTemplate{
+	return templating.Resolve(string(query), QueryTemplate{
 		COUNTRY_NAME: country.String(),
 	})
+}
+
+// ResolveVNCSearchQueryForCountry renders the per-country VNC query template.
+func ResolveVNCSearchQueryForCountry(country Country) (string, error) {
+	return ResolveQueryForCountry(BaseVNCByCountryQueryString, country)
+}
+
+// Continent groups countries by geographic region.
+type Continent string
+
+const (
+	ContinentEurope       Continent = "Europe"
+	ContinentAsia         Continent = "Asia"
+	ContinentNorthAmerica Continent = "North America"
+	ContinentSouthAmerica Continent = "South America"
+	ContinentAfrica       Continent = "Africa"
+	ContinentOceania      Continent = "Oceania"
+	ContinentMiddleEast   Continent = "Middle East"
+)
+
+// AllContinents lists every defined continent.
+var AllContinents = []Continent{
+	ContinentEurope, ContinentAsia, ContinentNorthAmerica,
+	ContinentSouthAmerica, ContinentAfrica, ContinentOceania,
+	ContinentMiddleEast,
+}
+
+// CountriesByContinent maps each continent to its countries.
+var CountriesByContinent = map[Continent][]Country{
+	ContinentEurope: {
+		CountryGermany, CountryFrance, CountryUnitedKingdom, CountryItaly,
+		CountryNetherlands, CountrySpain, CountryDenmark, CountryPoland,
+		CountrySweden, CountryIreland, CountryBelgium, CountrySwitzerland,
+		CountryRomania, CountryFinland, CountryAustria, CountryUkraine,
+		CountryHungary, CountryCzechRepublic, CountryBulgaria, CountryGreece,
+		CountryPortugal, CountryNorway, CountrySerbia, CountryCroatia,
+		CountryLatvia, CountryMoldova, CountryLithuania, CountrySlovakia,
+		CountryBosniaAndHerzegovina, CountryBelarus, CountrySlovenia,
+		CountryEstonia, CountryIceland, CountryLuxembourg, CountryRussia,
+		CountryCyprus, CountryGeorgia,
+	},
+	ContinentAsia: {
+		CountrySouthKorea, CountryChina, CountryJapan, CountryHongKong,
+		CountryIndia, CountrySingapore, CountryTaiwan, CountryThailand,
+		CountryVietnam, CountryPakistan, CountryIndonesia, CountryMalaysia,
+		CountryPhilippines, CountryKazakhstan, CountryBangladesh, CountryCambodia,
+		CountrySriLanka,
+	},
+	ContinentNorthAmerica: {
+		CountryUnitedStates, CountryCanada, CountryMexico, CountryPanama,
+		CountryCostaRica, CountryPuertoRico, CountryJamaica,
+		CountryDominicanRepublic, CountryTrinidadAndTobago,
+		CountryGuadeloupe, CountryMartinique,
+	},
+	ContinentSouthAmerica: {
+		CountryBrazil, CountryArgentina, CountryColombia, CountryChile,
+		CountryVenezuela, CountryEcuador, CountryPeru, CountryUruguay,
+		CountryBolivia, CountryParaguay,
+	},
+	ContinentAfrica: {
+		CountrySouthAfrica, CountryMorocco, CountryEgypt, CountryTunisia,
+		CountryAlgeria, CountrySenegal, CountryNigeria, CountryKenya,
+		CountryBurkinaFaso, CountryIvoryCoast, CountryMauritius, CountryReunion,
+	},
+	ContinentOceania: {
+		CountryAustralia, CountryNewZealand,
+	},
+	ContinentMiddleEast: {
+		CountryTurkey, CountrySaudiArabia, CountryUnitedArabEmirates,
+		CountryIsrael, CountryIran, CountryOman, CountryKuwait,
+		CountryBahrain, CountryPalestinianTerritory, CountryYemen, CountryIraq,
+	},
 }

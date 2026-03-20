@@ -16,7 +16,7 @@ import (
 const configFileName = "config.json"
 
 // Controls whether to error if the default config is generated instead of loaded from a file.
-const failOnDefaultConfigGenerate = true
+const failOnDefaultConfigGenerate = false
 
 var (
 	portableSearchPaths = []string{

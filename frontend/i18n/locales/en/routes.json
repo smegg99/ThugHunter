@@ -1,0 +1,9 @@
+{
+  "routes": {
+    "home": "Home",
+    "browse": "Browse",
+    "agents": "Agents",
+    "accounts": "Accounts",
+    "settings": "Settings"
+  }
+}

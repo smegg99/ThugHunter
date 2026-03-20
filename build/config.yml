@@ -11,7 +11,7 @@ info:
   description: "Program for hunting thugs on the internet." # The application description
   copyright: "(c) 2025, Smegg99" # Copyright text
   # comments: "" # Comments
-  version: "1.0.0" # The application version
+  version: "2.0.0" # The application version
   # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)
   #                               # Should match the name of your .icon file without the extension
   #                               # If not set and Assets.car exists, defaults to "appicon"
@@ -34,7 +34,7 @@ info:
 dev_mode:
   root_path: .
   log_level: warn
-  debounce: 1000
+  debounce: 200
   ignore:
     dir:
       - .git
@@ -61,17 +61,17 @@ dev_mode:
 # File Associations
 # More information at: https://v3.wails.io/noit/done/yet
 fileAssociations:
-#  - ext: wails
-#    name: Wails
-#    description: Wails Application File
-#    iconName: wailsFileIcon
-#    role: Editor
-#  - ext: jpg
-#    name: JPEG
-#    description: Image File
-#    iconName: jpegFileIcon
-#    role: Editor
-#    mimeType: image/jpeg  # (optional)
+  - ext: thughunter
+    name: ThugHunter
+    description: Thug Hunter Application File
+    iconName: wailsFileIcon
+    role: Editor
+  - ext: jpg
+    name: JPEG
+    description: Image File
+    iconName: jpegFileIcon
+    role: Editor
+    mimeType: image/jpeg  # (optional)
 
 # Other data
 # other:

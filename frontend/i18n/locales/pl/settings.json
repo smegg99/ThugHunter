@@ -1,0 +1,153 @@
+{
+  "settings": {
+    "title": "Ustawienia",
+    "general": "Ogólne",
+    "appearance": "Wygląd",
+    "language": "Język",
+    "theme": "Motyw",
+    "themes": {
+      "light": "Jasny",
+      "dark": "Ciemny"
+    },
+    "variant": "Kontrast",
+    "variants": {
+      "normal": "Normalny",
+      "highContrast": "Wysoki kontrast"
+    },
+    "accent": "Kolor akcentu",
+    "accentModes": {
+      "auto": "Systemowy",
+      "custom": "Własny"
+    },
+    "accentPickerTitle": "Wybierz kolor akcentu",
+    "memoryUnit": "Jednostka pamięci",
+    "memoryUnits": {
+      "auto": "Auto"
+    },
+    "nav": {
+      "appearance": "Wygląd",
+      "preferences": "Preferencje",
+      "imap": "IMAP",
+      "scraper": "Scraper",
+      "accounts": "Konta",
+      "dataExport": "Eksport danych",
+      "dataImport": "Import danych",
+      "scanner": "Skaner"
+    },
+    "comingSoon": "Ta funkcja będzie wkrótce dostępna.",
+    "preferences": {
+      "title": "Preferencje",
+      "closeToTray": "Zamykanie do zasobnika",
+      "closeToTrayDesc": "Minimalizuj do zasobnika systemowego zamiast zamykać aplikację."
+    },
+    "imap": {
+      "title": "Konfiguracja IMAP",
+      "description": "Serwer IMAP używany do odbierania maili weryfikacyjnych podczas rejestracji.",
+      "host": "Serwer",
+      "port": "Port",
+      "catchAllUsername": "Login catch-all",
+      "catchAllPassword": "Hasło catch-all",
+      "mbox": "Skrzynka",
+      "useTls": "Używaj TLS",
+      "verify": "Sprawdź połączenie",
+      "verifying": "Sprawdzanie…",
+      "verifySuccess": "Połączenie IMAP działa prawidłowo.",
+      "verifyFailed": "Błąd połączenia: {error}",
+      "notConfigured": "IMAP nie jest skonfigurowany. Rejestracja kont będzie niedostępna.",
+      "errors": {
+        "host_not_configured": "Nie podano adresu serwera IMAP.",
+        "port_invalid": "Podany port jest nieprawidłowy.",
+        "credentials_not_configured": "Brak loginu lub hasła.",
+        "mailbox_not_configured": "Nie podano nazwy skrzynki.",
+        "connection_failed": "Nie udało się połączyć z serwerem.",
+        "connection_failed_try_tls": "Nie udało się połączyć z serwerem. Spróbuj włączyć TLS.",
+        "login_failed": "Błąd logowania. Sprawdź login i hasło.",
+        "login_failed_try_tls": "Błąd logowania. Serwer prawdopodobnie wymaga TLS.",
+        "mailbox_not_found": "Nie znaleziono skrzynki. Sprawdź jej nazwę."
+      }
+    },
+    "scanner": {
+      "title": "Konfiguracja skanera",
+      "ping": "Ping",
+      "pingMode": "Tryb pingu",
+      "pingModeDesc": "Soft pomija hosty, które nie odpowiadają na ping. Strict skanuje tylko hosty, które odpowiadają.",
+      "pingModes": {
+        "soft": "Soft",
+        "strict": "Strict"
+      },
+      "icmpPing": "Ping ICMP",
+      "icmpPingDesc": "Używaj żądań ICMP echo zamiast TCP do pingowania. Na niektórych systemach wymaga podwyższonych uprawnień.",
+      "workers": "Wątki robocze",
+      "maxWorkers": "Maks. wątków",
+      "maxWorkersDesc": "Maks. liczba jednocześnie działających wątków skanowania. Ograniczona do liczby hostów.",
+      "pingTimeout": "Limit czasu pingu",
+      "pingTimeoutDesc": "Sekundy oczekiwania na odpowiedź ping, po których host jest oznaczany jako niedostępny.",
+      "connectTimeout": "Limit czasu połączenia",
+      "connectTimeoutDesc": "Sekundy oczekiwania na nawiązanie połączenia TCP z portem usługi.",
+      "bannerTimeout": "Limit czasu banneru",
+      "bannerTimeoutDesc": "Sekundy oczekiwania na banner usługi po nawiązaniu połączenia.",
+      "templates": "Polecenia protokołów",
+      "vncCommand": "Polecenie VNC",
+      "vncCommandDesc": "Polecenie powłoki uruchamiane przy łączeniu z usługą VNC.",
+      "rdpCommand": "Polecenie RDP",
+      "rdpCommandDesc": "Polecenie powłoki uruchamiane przy łączeniu z usługą RDP.",
+      "spiceCommand": "Polecenie SPICE",
+      "spiceCommandDesc": "Polecenie powłoki uruchamiane przy łączeniu z usługą SPICE.",
+      "sshCommand": "Polecenie SSH",
+      "sshCommandDesc": "Polecenie powłoki uruchamiane przy łączeniu przez SSH.",
+      "httpCommand": "Polecenie HTTP",
+      "httpCommandDesc": "Polecenie powłoki uruchamiane przy otwieraniu usługi HTTP.",
+      "httpsCommand": "Polecenie HTTPS",
+      "httpsCommandDesc": "Polecenie powłoki uruchamiane przy otwieraniu usługi HTTPS.",
+      "screenshotCommand": "Polecenie zrzutu ekranu",
+      "screenshotCommandDesc": "Polecenie powłoki do przechwycenia zrzutu ekranu VNC. Musi zapisać obraz do ścieżki {'{'}{'{'}.OUTPUT{'}'}{'}'}.",
+      "templatesHelp": {
+        "title": "Szablony poleceń protokołów",
+        "body": "Skonfiguruj polecenia powłoki używane do łączenia z każdym protokołem. Używaj składni szablonów Go z podwójnymi nawiasami klamrowymi.\n\nDostępne zmienne:\n  {'{'}{'{'}.PROTOCOL{'}'}{'}'} - protokół połączenia (vnc, rdp itd.)\n  {'{'}{'{'}.IP{'}'}{'}'} - adres IP hosta\n  {'{'}{'{'}.PORT{'}'}{'}'} - numer portu usługi\n\nPolecenie zrzutu ekranu obsługuje także:\n  {'{'}{'{'}.OUTPUT{'}'}{'}'} - ścieżka do zapisu przechwyconego obrazu\n\nPrzykłady:\n  remmina -c vnc://{'{'}{'{'}.IP{'}'}{'}'}:{'{'}{'{'}.PORT{'}'}{'}'}\n  xdg-open rdp://{'{'}{'{'}.IP{'}'}{'}'}:{'{'}{'{'}.PORT{'}'}{'}'}\n  remote-viewer spice://{'{'}{'{'}.IP{'}'}{'}'}:{'{'}{'{'}.PORT{'}'}{'}'}\n  ssh {'{'}{'{'}.IP{'}'}{'}'} -p {'{'}{'{'}.PORT{'}'}{'}'}\n  vncdotool -s {'{'}{'{'}.IP{'}'}{'}'}::{'{'}{'{'}.PORT{'}'}{'}'} capture {'{'}{'{'}.OUTPUT{'}'}{'}'}"
+      },
+      "screenshots": "Zrzuty ekranu",
+      "screenshotMaxWorkers": "Wątki zrzutów ekranu",
+      "screenshotMaxWorkersDesc": "Maksymalna liczba jednoczesnych zrzutów ekranu podczas fazy po skanowaniu.",
+      "screenshotTimeout": "Limit czasu zrzutu ekranu",
+      "screenshotTimeoutDesc": "Liczba sekund oczekiwania na przechwycenie zrzutu ekranu VNC przed przekroczeniem limitu czasu.",
+      "screenshotDelay": "Opóźnienie zrzutu ekranu",
+      "screenshotDelayDesc": "Sekundy między krokami protokołu VNC. Wyższe wartości poprawiają niezawodność na wolnych połączeniach.",
+      "screenshotPause": "Pauza zrzutu ekranu",
+      "screenshotPauseDesc": "Sekundy oczekiwania po połączeniu przed przechwyceniem zrzutu ekranu. Pozwala na pełne wyrenderowanie obrazu.",
+      "rejectBlankScreenshots": "Odrzucaj puste zrzuty ekranu",
+      "rejectBlankScreenshotsDesc": "Odrzucaj usługi VNC, które zwracają jednokolorowy lub pusty ekran, albo do których nie można się połączyć w celu zrzutu ekranu."
+    },
+    "scraper": {
+      "browser": "Przeglądarka",
+      "title": "Konfiguracja scrapera",
+      "browserBinaryPath": "Ścieżka do przeglądarki",
+      "browserBinaryPathDesc": "Ścieżka do pliku wykonywalnego przeglądarki opartej na Chromium.",
+      "virtualDisplay": "Wirtualny ekran",
+      "virtualDisplayDesc": "Uruchamiaj przeglądarkę w wirtualnym ekranie (Xvfb). Dostępne tylko na Linuksie z zainstalowanym Xvfb.",
+      "virtualDisplayUnavailable": "Wirtualny ekran nie jest dostępny na tym systemie.",
+      "agents": "Agenci",
+      "maxAgents": "Maks. agentów",
+      "maxAgentsDesc": "Maks. liczba agentów działających jednocześnie.",
+      "maxRegisterRetries": "Maks. prób rejestracji",
+      "maxRegisterRetriesDesc": "Maks. liczba ponownych prób rejestracji konta.",
+      "minimalBrowser": "Tryb minimalny",
+      "minimalBrowserDesc": "Blokuje pobieranie niektórych zbędnych rzeczy przez przeglądarkę. Może powodować błędy na niektórych stronach.",
+      "templates": "Szablony",
+      "emailTemplate": "Szablon e-maila",
+      "passwordTemplate": "Szablon hasła",
+      "organizationTemplate": "Szablon organizacji",
+      "firstNameTemplate": "Szablon imienia",
+      "lastNameTemplate": "Szablon nazwiska",
+      "templatesHelp": {
+        "title": "Zmienne szablonów",
+        "body": "Szablony pozwalają kontrolować sposób generowania danych kont podczas rejestracji. Używaj składni szablonów z Go z podwójnymi nawiasami klamrowymi, np. {'{'}{'{'}.NAZWA_ZMIENNEJ{'}'}{'}'}.\n\nIdentyfikatory:\n  {'{'}{'{'}.ACCOUNT_ID{'}'}{'}'}  - unikalny identyfikator numeryczny konta\n  {'{'}{'{'}.RANDOM_NONSENSE{'}'}{'}'}  - 8 losowych znaków (min. 1 wielka litera, 1 mała, 1 cyfra, 1 znak specjalny)\n\nPola imienia:\n  {'{'}{'{'}.FIRST_NAME{'}'}{'}'},  {'{'}{'{'}.LAST_NAME{'}'}{'}'}  - losowo generowane imię i nazwisko\n  {'{'}{'{'}.LC_FIRST_NAME{'}'}{'}'},  {'{'}{'{'}.LC_LAST_NAME{'}'}{'}'}  - wersje małymi literami\n  {'{'}{'{'}.FULL_NAME{'}'}{'}'}  - imię + nazwisko\n  {'{'}{'{'}.LC_FULL_NAME{'}'}{'}'}  - pełne imię małymi literami\n\nDane losowe:\n  {'{'}{'{'}.USERNAME{'}'}{'}'}  - pierwsza litera imienia + nazwisko + losowa liczba\n  {'{'}{'{'}.COMPANY{'}'}{'}'}  - losowa nazwa firmy\n  {'{'}{'{'}.CITY{'}'}{'}'},  {'{'}{'{'}.COUNTRY{'}'}{'}'}  - losowa lokalizacja\n  {'{'}{'{'}.JOB_TITLE{'}'}{'}'},  {'{'}{'{'}.BUZZWORD{'}'}{'}'}  - losowy tytuł zawodowy / buzzword\n  {'{'}{'{'}.DOMAIN{'}'}{'}'}  - losowa nazwa domeny\n\nCyfry:\n  {'{'}{'{'}.DIGITS_1{'}'}{'}'}  do  {'{'}{'{'}.DIGITS_6{'}'}{'}'}  - losowe liczby z dopełnieniem zerami o 1–6 cyfrach\n\nMożesz dowolnie łączyć zmienne, na przykład:\n  {'{'}{'{'}.LC_FIRST_NAME{'}'}{'}'}. {'{'}{'{'}.LC_LAST_NAME{'}'}{'}'} {'{'}{'{'}.DIGITS_2{'}'}{'}'} {'@'}twojadomena.pl"
+      },
+      "customQueries": "Własne zapytania",
+      "customQueriesPlaceholder": "Wpisz jedno zapytanie na linię…",
+      "customQueriesHelp": {
+        "title": "Szablony zapytań",
+        "body": "Dodaj własne zapytania do przebiegów scrapowania. Wpisz jedno zapytanie na linię.\n\nMożesz używać szablonów, które rozwijają się w wiele zapytań:\n\n  {'{'}{'{'} ALL_COUNTRIES {'}'}{'}'} - generuje jedno zapytanie dla każdego dostępnego kraju\n  {'{'}{'{'} CONTINENT:Nazwa {'}'}{'}'} - generuje jedno zapytanie dla każdego kraju na danym kontynencie\n\nDostępne kontynenty:\n  Europe, Asia, North America, South America, Africa, Oceania, Middle East\n\nPrzykład:\n  host.services.vnc.security_types.value:\"1\" and host.location.country:\"{'{'}{'{'} ALL_COUNTRIES {'}'}{'}'} \"\n\nTa jedna linia rozwinie się w ~97 zapytań, po jednym na kraj.\n\n  host.services.rdp and host.location.country:\"{'{'}{'{'} CONTINENT:Europe {'}'}{'}'} \"\n\nTo rozwinie się w jedno zapytanie na każdy kraj europejski."
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-// frontend/app/types/locale.ts
+// app/types/locale.ts
 export type LocaleCode = 'en' | 'pl'
 
 export interface LocaleInfo {

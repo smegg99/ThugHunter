@@ -1,0 +1,22 @@
+{
+  "home": {
+    "title": "Panel",
+    "subtitle": "Przegląd systemu i statystyki scrapera.",
+    "monitor": {
+      "title": "Monitor systemu",
+      "cpuTotal": "CPU {percent}%",
+      "cpuHistory": "Użycie CPU",
+      "timeAgo": "{seconds}s temu",
+      "timeNow": "teraz",
+      "ram": "RAM",
+      "swap": "Swap"
+    },
+    "stats": {
+      "title": "Statystyki",
+      "hosts": "Odkryte hosty",
+      "credits": "Łącznie kredytów",
+      "queries": "Możliwe zapytania",
+      "usableAccounts": "Dostępne konta"
+    }
+  }
+}

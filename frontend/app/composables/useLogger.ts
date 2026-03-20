@@ -1,4 +1,4 @@
-// frontend/app/composables/useLogger.ts
+// app/composables/useLogger.ts
 import * as LoggerService from '~~bindings/smegg.me/thughunter/services/logger/service.js'
 import type { LogLevel, Fields } from '~/types/logger'
 
@@ -44,7 +44,6 @@ function log(level: LogLevel, msg: string, fields: Fields = {}) {
   levelToBackend[level](msg, fields).catch(() => {})
 }
 
-// Logger composable that provides logging methods that log both to the backend and optionally to the frontend console as well.
 export function useLogger() {
   return {
     trace: (msg: string, fields?: Fields) => log('trace', msg, fields ?? {}),

@@ -18,6 +18,7 @@ type imapClient struct {
 	mbox string
 }
 
+// dialIMAP connects to the IMAP server and selects the mailbox. It returns an authenticated client ready for use.
 func dialIMAP(host string, port int, username, password, mbox string, useTLS bool) (*imapClient, error) {
 	addr := fmt.Sprintf("%s:%d", host, port)
 
@@ -52,11 +53,25 @@ type fetchedMail struct {
 	Body string
 }
 
+// fetchUnseenMails retrieves unseen emails from the mailbox, skipping any UIDs in the provided skip map. It returns a slice of fetchedMail.
 func (ic *imapClient) fetchUnseenMails(skip map[imap.UID]struct{}) ([]fetchedMail, error) {
 	if err := ic.c.Noop().Wait(); err != nil {
 		return nil, fmt.Errorf("noop: %w", err)
 	}
 
+	toFetch, err := ic.searchUnseenUIDs(skip)
+	if err != nil {
+		return nil, err
+	}
+	if len(toFetch) == 0 {
+		return nil, nil
+	}
+
+	return ic.fetchMails(toFetch)
+}
+
+// searchUnseenUIDs performs a search for unseen emails and returns their UIDs, excluding any UIDs present in the skip map.
+func (ic *imapClient) searchUnseenUIDs(skip map[imap.UID]struct{}) ([]imap.UID, error) {
 	criteria := &imap.SearchCriteria{
 		NotFlag: []imap.Flag{imap.FlagSeen},
 	}
@@ -65,21 +80,17 @@ func (ic *imapClient) fetchUnseenMails(skip map[imap.UID]struct{}) ([]fetchedMai
 		return nil, fmt.Errorf("search: %w", err)
 	}
 
-	uids := data.AllUIDs()
-	if len(uids) == 0 {
-		return nil, nil
-	}
-
 	var toFetch []imap.UID
-	for _, uid := range uids {
+	for _, uid := range data.AllUIDs() {
 		if _, ok := skip[uid]; !ok {
 			toFetch = append(toFetch, uid)
 		}
 	}
-	if len(toFetch) == 0 {
-		return nil, nil
-	}
+	return toFetch, nil
+}
 
+// fetchMails retrieves the full email data for the given UIDs and returns a slice of fetchedMail.
+func (ic *imapClient) fetchMails(uids []imap.UID) ([]fetchedMail, error) {
 	bodySection := &imap.FetchItemBodySection{Peek: true}
 	fetchOptions := &imap.FetchOptions{
 		Envelope:    true,
@@ -87,7 +98,7 @@ func (ic *imapClient) fetchUnseenMails(skip map[imap.UID]struct{}) ([]fetchedMai
 		BodySection: []*imap.FetchItemBodySection{bodySection},
 	}
 
-	fetchCmd := ic.c.Fetch(imap.UIDSetNum(toFetch...), fetchOptions)
+	fetchCmd := ic.c.Fetch(imap.UIDSetNum(uids...), fetchOptions)
 
 	var results []fetchedMail
 	for {
@@ -95,52 +106,67 @@ func (ic *imapClient) fetchUnseenMails(skip map[imap.UID]struct{}) ([]fetchedMai
 		if msg == nil {
 			break
 		}
-
-		var fm fetchedMail
-		var envelope *imap.Envelope
-		var bodyBytes []byte
-
-		for {
-			item := msg.Next()
-			if item == nil {
-				break
-			}
-			switch d := item.(type) {
-			case imapclient.FetchItemDataUID:
-				fm.UID = d.UID
-			case imapclient.FetchItemDataEnvelope:
-				envelope = d.Envelope
-			case imapclient.FetchItemDataBodySection:
-				bodyBytes, _ = io.ReadAll(d.Literal)
-			}
-		}
-
-		if envelope != nil {
-			for _, addr := range envelope.To {
-				fm.To = append(fm.To, addr.Mailbox+"@"+addr.Host)
-			}
-		}
-
-		if len(bodyBytes) > 0 {
-			mr, err := mail.CreateReader(bytes.NewReader(bodyBytes))
-			if err == nil {
-				fm.Body = extractTextBody(mr)
-			} else {
-				// Use the raw message bytes as a fallback if parsing fails.
-				fm.Body = string(bodyBytes)
-			}
-		}
-
+		fm := parseFetchedMessage(msg)
 		results = append(results, fm)
 	}
 
 	if err := fetchCmd.Close(); err != nil {
 		return results, fmt.Errorf("fetch: %w", err)
 	}
-
 	return results, nil
 }
 
+// parseFetchedMessage extracts the UID, recipient addresses, and body text from the fetched message data. It returns a fetchedMail struct with this information.
+func parseFetchedMessage(msg *imapclient.FetchMessageData) fetchedMail {
+	var fm fetchedMail
+	var envelope *imap.Envelope
+	var bodyBytes []byte
+
+	for {
+		item := msg.Next()
+		if item == nil {
+			break
+		}
+		switch d := item.(type) {
+		case imapclient.FetchItemDataUID:
+			fm.UID = d.UID
+		case imapclient.FetchItemDataEnvelope:
+			envelope = d.Envelope
+		case imapclient.FetchItemDataBodySection:
+			bodyBytes, _ = io.ReadAll(d.Literal)
+		}
+	}
+
+	if envelope != nil {
+		fm.To = extractAddresses(envelope.To)
+	}
+
+	fm.Body = parseBody(bodyBytes)
+	return fm
+}
+
+// extractAddresses converts a slice of imap.Address to a slice of email address strings in the format "mailbox@host".
+func extractAddresses(addrs []imap.Address) []string {
+	var result []string
+	for _, addr := range addrs {
+		result = append(result, addr.Mailbox+"@"+addr.Host)
+	}
+	return result
+}
+
+// parseBody attempts to read the email body as a multipart message. If successful, it extracts and returns the text/plain part. If parsing fails, it falls back to returning the raw body bytes as a string.
+func parseBody(bodyBytes []byte) string {
+	if len(bodyBytes) == 0 {
+		return ""
+	}
+	mr, err := mail.CreateReader(bytes.NewReader(bodyBytes))
+	if err != nil {
+		return string(bodyBytes)
+	}
+	return extractTextBody(mr)
+}
+
+// extractTextBody traverses the mail reader parts to find and return the first text/plain body content. If no such part is found, it returns an empty string.
 func extractTextBody(mr *mail.Reader) string {
 	for {
 		p, err := mr.NextPart()
@@ -157,6 +183,7 @@ func extractTextBody(mr *mail.Reader) string {
 	return ""
 }
 
+// snapshotExistingUIDs performs an initial search for unseen emails and returns their UIDs as a map. This is used to avoid processing old emails that were present before the catcher started.
 func (ic *imapClient) snapshotExistingUIDs() ([]imap.UID, error) {
 	criteria := &imap.SearchCriteria{
 		NotFlag: []imap.Flag{imap.FlagSeen},

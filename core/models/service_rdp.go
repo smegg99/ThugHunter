@@ -1,6 +1,9 @@
-// core/models/scraper_service_rdp.go
+// core/models/service_rdp.go
+//
+// RDP service model.
 package models
 
+// RDPService stores probe results for an RDP endpoint.
 type RDPService struct {
 	ServiceBase
 }

@@ -1,0 +1,22 @@
+{
+  "home": {
+    "title": "Dashboard",
+    "subtitle": "System overview and scraper statistics at a glance.",
+    "monitor": {
+      "title": "System Monitor",
+      "cpuTotal": "CPU {percent}%",
+      "cpuHistory": "CPU Usage",
+      "timeAgo": "{seconds}s ago",
+      "timeNow": "now",
+      "ram": "RAM",
+      "swap": "Swap"
+    },
+    "stats": {
+      "title": "Scraper Overview",
+      "hosts": "Hosts Discovered",
+      "credits": "Total Credits",
+      "queries": "Possible Queries",
+      "usableAccounts": "Usable Accounts"
+    }
+  }
+}

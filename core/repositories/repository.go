@@ -1,3 +1,4 @@
+// core/repositories/repository.go
 package repositories
 
 import (
@@ -7,6 +8,7 @@ import (
 	"smegg.me/thughunter/core/datastore"
 )
 
+// Repository is a generic CRUD wrapper around GORM.
 type Repository[T any] struct {
 }
 
@@ -53,7 +55,18 @@ func (r *Repository[T]) Update(entity *T) error {
 func (r *Repository[T]) Delete(id uint) error {
 	logger.Debug().Uint("id", id).Msg("deleting entity")
 	db := datastore.Get()
-	
+
 	var entity T
 	return db.Delete(&entity, id).Error
+}
+
+// normalizePage clamps page/pageSize to valid ranges and returns the offset.
+func normalizePage(page, pageSize int) (normalizedPage, normalizedSize, offset int) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+	return page, pageSize, (page - 1) * pageSize
 }

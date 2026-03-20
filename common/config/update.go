@@ -31,6 +31,27 @@ func SetLoggerConfig(lc LoggerConfig) error {
 	}{Logger: lc})
 }
 
+// SetImapConfig updates only the imap section.
+func SetImapConfig(ic Config) error {
+	return patchFromStruct(struct {
+		Imap any `json:"imap"`
+	}{Imap: ic.Imap})
+}
+
+// SetScraperConfig updates only the scraper section.
+func SetScraperConfig(sc Config) error {
+	return patchFromStruct(struct {
+		Scraper any `json:"scraper"`
+	}{Scraper: sc.Scraper})
+}
+
+// SetScannerConfig updates only the scanner section.
+func SetScannerConfig(sc Config) error {
+	return patchFromStruct(struct {
+		Scanner any `json:"scanner"`
+	}{Scanner: sc.Scanner})
+}
+
 // Marshals a typed struct into a map and applies it as a patch.
 func patchFromStruct(v any) error {
 	b, err := json.Marshal(v)

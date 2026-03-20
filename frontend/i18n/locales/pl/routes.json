@@ -1,0 +1,9 @@
+{
+  "routes": {
+    "home": "Start",
+    "browse": "Przeglądaj",
+    "agents": "Agenci",
+    "accounts": "Konta",
+    "settings": "Ustawienia"
+  }
+}

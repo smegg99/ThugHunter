@@ -1,13 +1,24 @@
 <!-- frontend/app/spa-loading-template.html -->
 <div id="boot">
   <style>
+    @keyframes boot-fade {
+      0% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+      }
+    }
+
     #boot {
       position: fixed;
       inset: 0;
-      background: Canvas;
+      background: black;
       z-index: 999999;
-      opacity: 1;
-      transition: opacity 1s ease-in-out;
+      opacity: 0;
+      animation: boot-fade 2s ease-in-out forwards;
+      pointer-events: none;
     }
   </style>
 </div>

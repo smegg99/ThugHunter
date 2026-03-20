@@ -2,9 +2,8 @@
 package scraper
 
 import (
-	"crypto/rand"
 	"fmt"
-	"math/big"
+	"math/rand/v2"
 	"strings"
 
 	"github.com/brianvoe/gofakeit/v6"
@@ -35,39 +34,23 @@ func generatePetname() string {
 	return petname.Generate(PetnameWords, PetnameSeparator)
 }
 
+// generateRandomNonsense returns a 12-char string with at least one
+// uppercase, lowercase, digit, and special character.
 func generateRandomNonsense() string {
-	length := 12
+	const length = 8
 	result := make([]byte, 0, length)
 
-	result = append(result, randomChar(upper))
-	result = append(result, randomChar(lower))
-	result = append(result, randomChar(digits))
-	result = append(result, randomChar(specials))
+	result = append(result, upper[rand.IntN(len(upper))])
+	result = append(result, lower[rand.IntN(len(lower))])
+	result = append(result, digits[rand.IntN(len(digits))])
+	result = append(result, specials[rand.IntN(len(specials))])
 
 	for len(result) < length {
-		result = append(result, randomChar(allChars))
+		result = append(result, allChars[rand.IntN(len(allChars))])
 	}
 
-	shuffle(result)
+	rand.Shuffle(len(result), func(i, j int) { result[i], result[j] = result[j], result[i] })
 	return string(result)
-}
-
-func randomChar(set string) byte {
-	n := big.NewInt(int64(len(set)))
-	i, _ := rand.Int(rand.Reader, n)
-	return set[i.Int64()]
-}
-
-func shuffle(b []byte) {
-	for i := len(b) - 1; i > 0; i-- {
-		j := randInt(i + 1)
-		b[i], b[j] = b[j], b[i]
-	}
-}
-
-func randInt(max int) int {
-	n, _ := rand.Int(rand.Reader, big.NewInt(int64(max)))
-	return int(n.Int64())
 }
 
 // templateData holds the variables available for template substitution.
@@ -75,26 +58,28 @@ type templateData struct {
 	ACCOUNT_ID      string
 	RANDOM_NONSENSE string
 
-	FIRST_NAME string
-	LAST_NAME  string
-	FULL_NAME  string
-	USERNAME   string
-	COMPANY    string
-	CITY       string
-	COUNTRY    string
-	JOB_TITLE  string
-	BUZZWORD   string
-	DOMAIN     string
-	DIGITS_1   string
-	DIGITS_2   string
-	DIGITS_3   string
-	DIGITS_4   string
-	DIGITS_5   string
-	DIGITS_6   string
+	FIRST_NAME    string
+	LAST_NAME     string
+	LC_FIRST_NAME string
+	LC_LAST_NAME  string
+	FULL_NAME     string
+	LC_FULL_NAME  string
+	USERNAME      string
+	COMPANY       string
+	CITY          string
+	COUNTRY       string
+	JOB_TITLE     string
+	BUZZWORD      string
+	DOMAIN        string
+	DIGITS_1      string
+	DIGITS_2      string
+	DIGITS_3      string
+	DIGITS_4      string
+	DIGITS_5      string
+	DIGITS_6      string
 }
 
-// newAccountFromTemplates creates a Account by resolving the config
-// templates with a unique account ID.
+// newAccountFromTemplates creates an Account by resolving config templates.
 func newAccountFromTemplates(accountID string) (*models.Account, error) {
 	tpl := config.Get().Scraper.Agents.Templates
 	nonsense := generateRandomNonsense()
@@ -102,27 +87,31 @@ func newAccountFromTemplates(accountID string) (*models.Account, error) {
 	faker := gofakeit.New(0) // 0 = random seed from crypto/rand
 	firstName := faker.FirstName()
 	lastName := faker.LastName()
+	fullName := fmt.Sprintf("%s %s", firstName, lastName)
 
 	data := templateData{
 		ACCOUNT_ID:      accountID,
 		RANDOM_NONSENSE: nonsense,
 
-		FIRST_NAME: firstName,
-		LAST_NAME:  lastName,
-		FULL_NAME:  firstName + " " + lastName,
-		USERNAME:   strings.ToLower(firstName[:1] + lastName + fmt.Sprintf("%d", faker.IntRange(1, 99))),
-		COMPANY:    faker.Company(),
-		CITY:       faker.City(),
-		COUNTRY:    faker.Country(),
-		JOB_TITLE:  faker.JobTitle(),
-		BUZZWORD:   faker.BuzzWord(),
-		DOMAIN:     faker.DomainName(),
-		DIGITS_1:   fmt.Sprintf("%d", faker.IntRange(0, 9)),
-		DIGITS_2:   fmt.Sprintf("%02d", faker.IntRange(0, 99)),
-		DIGITS_3:   fmt.Sprintf("%03d", faker.IntRange(0, 999)),
-		DIGITS_4:   fmt.Sprintf("%04d", faker.IntRange(0, 9999)),
-		DIGITS_5:   fmt.Sprintf("%05d", faker.IntRange(0, 99999)),
-		DIGITS_6:   fmt.Sprintf("%06d", faker.IntRange(0, 999999)),
+		FIRST_NAME:    firstName,
+		LAST_NAME:     lastName,
+		LC_FIRST_NAME: strings.ToLower(firstName),
+		LC_LAST_NAME:  strings.ToLower(lastName),
+		FULL_NAME:     fullName,
+		LC_FULL_NAME:  strings.ToLower(fullName),
+		USERNAME:      strings.ToLower(firstName[:1] + lastName + fmt.Sprintf("%d", faker.IntRange(1, 99))),
+		COMPANY:       faker.Company(),
+		CITY:          faker.City(),
+		COUNTRY:       faker.Country(),
+		JOB_TITLE:     faker.JobTitle(),
+		BUZZWORD:      faker.BuzzWord(),
+		DOMAIN:        faker.DomainName(),
+		DIGITS_1:      fmt.Sprintf("%d", faker.IntRange(0, 9)),
+		DIGITS_2:      fmt.Sprintf("%02d", faker.IntRange(0, 99)),
+		DIGITS_3:      fmt.Sprintf("%03d", faker.IntRange(0, 999)),
+		DIGITS_4:      fmt.Sprintf("%04d", faker.IntRange(0, 9999)),
+		DIGITS_5:      fmt.Sprintf("%05d", faker.IntRange(0, 99999)),
+		DIGITS_6:      fmt.Sprintf("%06d", faker.IntRange(0, 999999)),
 	}
 
 	logger.Debug().
@@ -132,29 +121,26 @@ func newAccountFromTemplates(accountID string) (*models.Account, error) {
 		Str("last_name", lastName).
 		Msg("resolving account templates")
 
-	email, err := templating.Resolve(tpl.EmailTemplate, data)
-	if err != nil {
-		return nil, fmt.Errorf("resolve email template: %w", err)
+	type field struct {
+		name string
+		tpl  string
+		dst  *string
 	}
 
-	password, err := templating.Resolve(tpl.PasswordTemplate, data)
-	if err != nil {
-		return nil, fmt.Errorf("resolve password template: %w", err)
+	var email, password, organization string
+	fields := []field{
+		{"email", tpl.EmailTemplate, &email},
+		{"password", tpl.PasswordTemplate, &password},
+		{"first_name", tpl.FirstNameTemplate, &firstName},
+		{"last_name", tpl.LastNameTemplate, &lastName},
+		{"organization", tpl.OrganizationTemplate, &organization},
 	}
-
-	firstName, err = templating.Resolve(tpl.FirstNameTemplate, data)
-	if err != nil {
-		return nil, fmt.Errorf("resolve first_name template: %w", err)
-	}
-
-	lastName, err = templating.Resolve(tpl.LastNameTemplate, data)
-	if err != nil {
-		return nil, fmt.Errorf("resolve last_name template: %w", err)
-	}
-
-	organization, err := templating.Resolve(tpl.OrganizationTemplate, data)
-	if err != nil {
-		return nil, fmt.Errorf("resolve organization template: %w", err)
+	for _, f := range fields {
+		val, err := templating.Resolve(f.tpl, data)
+		if err != nil {
+			return nil, fmt.Errorf("resolve %s template: %w", f.name, err)
+		}
+		*f.dst = val
 	}
 
 	logger.Debug().

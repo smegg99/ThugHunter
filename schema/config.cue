@@ -4,7 +4,7 @@ package schema
 
 #Config: {
 	db: {
-		path: string | *"@{datadir:db/thughuntedb}"
+		path: string | *"@{datadir:db/thughunter.db}" @go(Path)
 	} @go(Db)
 	imap: {
 		host:               string | *"localhost"
@@ -32,9 +32,35 @@ package schema
         last_name: string | *"Last{{.ACCOUNT_ID}}" @go(LastNameTemplate)
       },
       max_agents: int & >0 | *10 @go(MaxAgents)
+      max_register_retries: int & >=0 | *3 @go(MaxRegisterRetries)
     }
     browser_binary_path: string | *"/usr/bin/google-chrome-stable" @go(BrowserBinaryPath)
     virtual_display: bool | *true @go(VirtualDisplay)
+    minimal_browser: bool | *false @go(MinimalBrowser)
+  }
+  scanner: {
+    ping_mode: "strict" | "soft" | *"soft" @go(PingMode)
+    icmp_ping: bool | *true @go(IcmpPing)
+    reject_blank_screenshots: bool | *true @go(RejectBlankScreenshots)
+    workers: {
+      ping_timeout_seconds: int & >0 | *3 @go(PingTimeoutSeconds)
+      connect_timeout_seconds: int & >0 | *10 @go(ConnectTimeoutSeconds)
+      banner_timeout_seconds: int & >0 | *10 @go(BannerTimeoutSeconds)
+      screenshot_timeout_seconds: int & >0 | *15 @go(ScreenshotTimeoutSeconds)
+      screenshot_delay_seconds: int & >=0 | *1 @go(ScreenshotDelaySeconds)
+      screenshot_pause_seconds: int & >=0 | *5 @go(ScreenshotPauseSeconds)
+      screenshot_max_workers: int & >0 | *32 @go(ScreenshotMaxWorkers)
+      max_workers: int & >0 | *2000 @go(MaxWorkers)
+    }
+    templates: {
+      vnc_command:        string | *"remmina -c vnc://{{.IP}}:{{.PORT}}" @go(VncCommandTemplate)
+      rdp_command:        string | *"xdg-open rdp://{{.IP}}:{{.PORT}}" @go(RdpCommandTemplate)
+      spice_command:      string | *"remote-viewer spice://{{.IP}}:{{.PORT}}" @go(SpiceCommandTemplate)
+      ssh_command:        string | *"xdg-open ssh://{{.IP}}:{{.PORT}}" @go(SshCommandTemplate)
+      http_command:       string | *"xdg-open http://{{.IP}}:{{.PORT}}" @go(HttpCommandTemplate)
+      https_command:      string | *"xdg-open https://{{.IP}}:{{.PORT}}" @go(HttpsCommandTemplate)
+      screenshot_command: string | *"vncdo -s {{.IP}}::{{.PORT}} -i --timeout {{.TIMEOUT}} --delay {{.DELAY}} pause {{.PAUSE}} capture {{.OUTPUT}}" @go(ScreenshotCommandTemplate)
+    }
   }
 	logger:      #LoggerConfig
 	preferences: #Preferences
@@ -46,11 +72,15 @@ package schema
 
 #AccentMode: "auto" | "custom"
 
+#MemoryUnit: "auto" | "mb" | "mib"
+
 #Preferences: {
-	theme:        #ThemeMode | *"auto"
-	language:     #LocaleCode | *"en"
-	accent_mode:  #AccentMode | *"auto" @go(AccentMode)
-	accent_color: string | *"" @go(AccentColor)
+	theme:          #ThemeMode | *"auto"
+	language:       #LocaleCode | *"en"
+	accent_mode:    #AccentMode | *"auto" @go(AccentMode)
+	accent_color:   string | *"" @go(AccentColor)
+	close_to_tray:  bool | *true @go(CloseToTray)
+	memory_unit:    #MemoryUnit | *"auto" @go(MemoryUnit)
 }
 
 #LoggerConfig: {

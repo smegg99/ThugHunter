@@ -4,6 +4,7 @@ package catcher
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -16,15 +17,20 @@ import (
 
 const defaultPollInterval = 5 * time.Second
 
+var codeRegex = regexp.MustCompile(`\b(\d{6})\b`)
+
+// Catcher polls an IMAP mailbox for verification codes addressed to
+// specific email addresses.
 type Catcher struct {
 	mu        sync.Mutex
-	waiters   map[string]chan string
+	waiters   map[string]chan string // email (lowercase) -> channel to send code to
 	client    *imapClient
-	processed map[imap.UID]struct{}
-	stop      chan struct{}
-	done      chan struct{}
+	processed map[imap.UID]struct{} // Set of UIDs that have already been processed to avoid duplicates.
+	stop      chan struct{}         // Closed to signal the poll loop to stop.
+	done      chan struct{}         // Closed when the poll loop has fully exited.
 }
 
+// New initializes the Catcher by connecting to the IMAP server and starting the polling loop.
 func New() (*Catcher, error) {
 	cfg := config.Get().Imap
 	cl, err := dialIMAP(cfg.Host, int(cfg.Port), cfg.CatchAllUsername, cfg.CatchAllPassword, cfg.Mbox, cfg.UseTls)
@@ -58,6 +64,7 @@ func New() (*Catcher, error) {
 	return c, nil
 }
 
+// WaitForCode blocks until a verification code is received for the given email or the timeout expires.
 func (c *Catcher) WaitForCode(email string, timeout time.Duration) (string, error) {
 	key := strings.ToLower(email)
 	ch := make(chan string, 1)
@@ -94,6 +101,7 @@ func (c *Catcher) Close() error {
 	return c.client.close()
 }
 
+// pollLoop runs in a separate goroutine, periodically checking for new unseen emails and dispatching them.
 func (c *Catcher) pollLoop() {
 	defer close(c.done)
 
@@ -110,6 +118,7 @@ func (c *Catcher) pollLoop() {
 	}
 }
 
+// poll checks for new unseen emails and dispatches any verification codes found.
 func (c *Catcher) poll() {
 	c.mu.Lock()
 	if len(c.waiters) == 0 {
@@ -129,6 +138,7 @@ func (c *Catcher) poll() {
 	}
 }
 
+// dispatch checks if the fetched mail contains a verification code and sends it to the appropriate waiter channel.
 func (c *Catcher) dispatch(m fetchedMail) {
 	code := extractVerificationCode(m.Body)
 	if code == "" {
@@ -156,4 +166,12 @@ func (c *Catcher) dispatch(m fetchedMail) {
 		Strs("to", m.To).
 		Uint32("uid", uint32(m.UID)).
 		Msg("no waiter for email, skipping")
+}
+
+func extractVerificationCode(body string) string {
+	match := codeRegex.FindStringSubmatch(body)
+	if len(match) >= 2 {
+		return match[1]
+	}
+	return ""
 }

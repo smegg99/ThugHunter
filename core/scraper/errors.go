@@ -29,7 +29,14 @@ var (
 
 	// Workflow errors
 	ErrLoginFailed        = errors.New("login failed")
+	ErrAccountNotActive   = errors.New("account not active")
+	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrRegistrationFailed = errors.New("registration failed")
 	ErrVerificationFailed = errors.New("verification failed")
 	ErrScrapeFailed       = errors.New("scrape failed")
+
+	// Run errors
+	ErrScraperAlreadyRunning = errors.New("scraper is already running")
+	ErrNoQueries             = errors.New("no queries to process")
+	ErrNoUsableAccounts      = errors.New("no usable accounts available")
 )

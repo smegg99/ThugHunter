@@ -1,0 +1,91 @@
+{
+  "agents": {
+    "title": "Agenci",
+    "subtitle": "Zarządzanie agentami i automatycznym scrapowaniem.",
+    "agentList": "Agenci",
+    "agentCount": "{count} agent | {count} agentów",
+    "noAgents": "Brak aktywnych agentów",
+    "noAgentsHint": "Agenci pojawią się po uruchomieniu przebiegu.",
+    "credits": "kredytów",
+    "status": {
+      "offline": "Offline",
+      "waiting": "Oczekuje",
+      "idle": "Bezczynny",
+      "busy": "Pracuje",
+      "error": "Błąd"
+    },
+    "fallback": {
+      "idle": "Gotowy",
+      "busy": "Pracuje…",
+      "waiting": "Oczekiwanie…",
+      "error": "Błąd",
+      "starting": "Uruchamianie…"
+    },
+    "run": {
+      "title": "Sterowanie",
+      "active": "Przebieg w toku",
+      "scraping": "Scrapowanie w toku",
+      "refreshing": "Odświeżanie kredytów",
+      "starting": "Uruchamianie\u2026",
+      "stopping": "Zatrzymywanie\u2026",
+      "idle": "Gotowy do uruchomienia",
+      "noAccountsHint": "Dodaj konta przed uruchomieniem.",
+      "startScraping": "Rozpocznij scrapowanie",
+      "refreshAccounts": "Odśwież konta",
+      "stop": "Zatrzymaj",
+      "completed": "Zakończono",
+      "failed": "Niepowodzenie",
+      "empty": "Puste",
+      "total": "Zapytania",
+      "hosts": "Hosty",
+      "progress": "Postęp",
+      "refreshed": "Odświeżone",
+      "remaining": "Pozostało",
+      "totalAccounts": "Konta w puli",
+      "agents": "Agenci",
+      "successRate": "Skuteczność",
+      "elapsed": "Czas",
+      "eta": "Pozostały czas",
+      "totalCredits": "Odświeżone kredyty",
+      "possibleQueries": "Możliwe zapytania",
+      "usedCredits": "Zużyte kredyty",
+      "accountsExhausted": "Scrapowanie przerwane: brak kont z wystarczającą liczbą kredytów.",
+      "queriesDialog": {
+        "title": "Zapytania",
+        "empty": "Brak dostępnych zapytań."
+      }
+    },
+    "register": {
+      "registerAccounts": "Rejestruj konta",
+      "registering": "Rejestracja kont",
+      "launchTitle": "Rejestracja kont",
+      "byCount": "Według liczby",
+      "byDuration": "Według czasu",
+      "accountCount": "Liczba kont",
+      "durationMinutes": "Czas trwania (min)",
+      "unlimited": "Bez limitu - działa do zatrzymania",
+      "cancel": "Anuluj",
+      "start": "Start",
+      "created": "Utworzono",
+      "target": "Cel"
+    },
+    "summary": {
+      "title": "Podsumowanie",
+      "stoppedEarly": "Przerwano",
+      "completedFully": "Zakończono",
+      "duration": "Czas trwania",
+      "close": "Zamknij"
+    },
+    "accounts": {
+      "title": "Konta",
+      "count": "{count} konto | {count} kont",
+      "email": "Email",
+      "credits": "Kredyty",
+      "status": "Status",
+      "active": "Aktywne",
+      "expired": "Wygasłe",
+      "noCredits": "Brak kredytów",
+      "empty": "Brak zarejestrowanych kont."
+    }
+  }
+}

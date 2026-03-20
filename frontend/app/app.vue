@@ -1,11 +1,8 @@
-<!-- frontend/app/app.vue -->
+<!-- app/app.vue -->
 <template>
   <div v-cloak>
-    <NuxtLoadingIndicator />
     <NuxtLayout>
-      <v-app>
-        <NuxtPage />
-      </v-app>
+      <NuxtPage />
     </NuxtLayout>
   </div>
 </template>

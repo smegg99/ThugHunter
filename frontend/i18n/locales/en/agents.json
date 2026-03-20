@@ -1,0 +1,91 @@
+{
+  "agents": {
+    "title": "Agents",
+    "subtitle": "Manage scraper agents and the automated scraping loop.",
+    "agentList": "Agents",
+    "agentCount": "{count} agent | {count} agents",
+    "noAgents": "No agents active",
+    "noAgentsHint": "Agents will appear here when a run is started.",
+    "credits": "credits",
+    "status": {
+      "offline": "Offline",
+      "waiting": "Waiting",
+      "idle": "Idle",
+      "busy": "Busy",
+      "error": "Error"
+    },
+    "fallback": {
+      "idle": "Ready",
+      "busy": "Working…",
+      "waiting": "Waiting…",
+      "error": "Error",
+      "starting": "Starting…"
+    },
+    "run": {
+      "title": "Run Control",
+      "active": "Run in progress",
+      "scraping": "Scraping in progress",
+      "refreshing": "Refreshing credits",
+      "starting": "Starting\u2026",
+      "idle": "Ready to start",
+      "noAccountsHint": "Add accounts before starting a run.",
+      "startScraping": "Start Scraping",
+      "refreshAccounts": "Refresh Accounts",
+      "stop": "Stop",
+      "stopping": "Stopping\u2026",
+      "completed": "Completed",
+      "failed": "Failed",
+      "empty": "Empty",
+      "total": "Queries",
+      "hosts": "Hosts",
+      "progress": "Progress",
+      "refreshed": "Refreshed",
+      "remaining": "Remaining",
+      "totalAccounts": "Accounts in pool",
+      "agents": "Agents",
+      "successRate": "Success Rate",
+      "elapsed": "Elapsed",
+      "eta": "ETA",
+      "totalCredits": "Refreshed Credits",
+      "possibleQueries": "Possible Queries",
+      "usedCredits": "Used Credits",
+      "accountsExhausted": "Scraping stopped early: no accounts with enough credits remain.",
+      "queriesDialog": {
+        "title": "Run Queries",
+        "empty": "No queries available."
+      }
+    },
+    "register": {
+      "registerAccounts": "Register Accounts",
+      "registering": "Registering accounts",
+      "launchTitle": "Register Accounts",
+      "byCount": "By count",
+      "byDuration": "By duration",
+      "accountCount": "Number of accounts",
+      "durationMinutes": "Duration (minutes)",
+      "unlimited": "Unlimited - runs until stopped",
+      "cancel": "Cancel",
+      "start": "Start",
+      "created": "Created",
+      "target": "Target"
+    },
+    "summary": {
+      "title": "Run Summary",
+      "stoppedEarly": "Stopped early",
+      "completedFully": "Completed",
+      "duration": "Duration",
+      "close": "Close"
+    },
+    "accounts": {
+      "title": "Accounts",
+      "count": "{count} account | {count} accounts",
+      "email": "Email",
+      "credits": "Credits",
+      "status": "Status",
+      "active": "Active",
+      "expired": "Expired",
+      "noCredits": "No Credits",
+      "empty": "No accounts registered yet."
+    }
+  }
+}

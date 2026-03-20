@@ -1,0 +1,43 @@
+{
+  "accounts": {
+    "title": "Konta",
+    "subtitle": "Zarejestrowane konta i stan ich kredytów.",
+    "empty": "Brak zarejestrowanych kont.",
+    "columns": {
+      "email": "Email",
+      "credits": "Kredyty",
+      "status": "Status",
+      "creditsExpire": "Wygaśnięcie kredytów",
+      "refreshed": "Ostatnie odświeżenie",
+      "actions": "Akcje"
+    },
+    "status": {
+      "active": "Aktywne",
+      "expired": "Wygasłe",
+      "noCredits": "Brak kredytów"
+    },
+    "actions": {
+      "editPassword": "Zmień hasło",
+      "delete": "Usuń"
+    },
+    "dialogs": {
+      "addTitle": "Dodaj konto",
+      "editPasswordTitle": "Zmień hasło",
+      "deleteTitle": "Usuń konto",
+      "deleteConfirm": "Czy na pewno chcesz usunąć to konto?",
+      "email": "Email",
+      "password": "Hasło",
+      "newPassword": "Nowe hasło",
+      "cancel": "Anuluj",
+      "save": "Zapisz",
+      "add": "Dodaj",
+      "delete": "Usuń",
+      "emailExists": "Konto z tym adresem email już istnieje.",
+      "invalidEmail": "Podaj prawidłowy adres email."
+    },
+    "search": "Szukaj kont…",
+    "pagination": {
+      "rowsPerPage": "Na stronę"
+    }
+  }
+}

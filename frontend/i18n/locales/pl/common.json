@@ -1,23 +1,16 @@
 {
-  "routes": {
-    "home": "Strona główna"
-  },
-  "settings": {
-    "language": "Język",
-    "theme": "Motyw",
-    "themes": {
-      "auto": "Auto",
-      "light": "Jasny",
-      "dark": "Ciemny",
-      "lightHighContrast": "Jasny WK",
-      "darkHighContrast": "Ciemny WK"
-    },
-    "accent": "Kolor akcentu",
-    "accentModes": {
-      "auto": "Z systemu",
-      "custom": "Własny"
-    },
-    "currentAccent": "Aktualny akcent",
-    "accentWatchNotSupported": "Wykrywanie koloru akcentu na żywo nie jest dostępne na tej platformie. Użyj trybu własnego, aby ustawić statyczny kolor."
+  "timeAgo": {
+    "justNow": "przed chwilą",
+    "past": "{count} {unit} temu",
+    "future": "za {count} {unit}",
+    "units": {
+      "year": "rok | lata | lat",
+      "month": "miesiąc | miesiące | miesięcy",
+      "week": "tydzień | tygodnie | tygodni",
+      "day": "dzień | dni | dni",
+      "hour": "godzinę | godziny | godzin",
+      "minute": "minutę | minuty | minut",
+      "second": "sekundę | sekundy | sekund"
+    }
   }
 }

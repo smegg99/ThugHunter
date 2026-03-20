@@ -1,3 +1,4 @@
+// core/repositories/service_pkcam.go
 package repositories
 
 import (
@@ -8,10 +9,12 @@ import (
 	"smegg.me/thughunter/core/models"
 )
 
+// PKCameraServiceRepository extends ServiceRepository for P2P/K cameras.
 type PKCameraServiceRepository struct {
 	*ServiceRepository[models.PKCameraService]
 }
 
+// GetPKCameraServiceRepository returns a PKCameraServiceRepository backed by the global DB.
 func GetPKCameraServiceRepository() *PKCameraServiceRepository {
 	return &PKCameraServiceRepository{ServiceRepository: NewServiceRepository[models.PKCameraService]()}
 }

@@ -1,4 +1,6 @@
-// core/models/scraper_host.go
+// core/models/host.go
+//
+// Host model for discovered network hosts.
 package models
 
 import (
@@ -7,52 +9,21 @@ import (
 	"gorm.io/gorm"
 )
 
+// Host represents a discovered network host with location, services, and labels.
 type Host struct {
 	gorm.Model
-	IP          string            `gorm:"uniqueIndex;not null" json:"ip"`
-	City        string            `json:"city"`
-	Region      string            `json:"region"`
-	CountryCode string            `json:"country_code"`
-	OS          string            `json:"os"`
-	Hardware    string            `json:"hardware"`
-	Labels      map[string]string `gorm:"type:json" json:"labels"`
-	Services    map[string]string `gorm:"type:json" json:"services"`
-	Software    map[string]string `gorm:"type:json" json:"software"`
-	// VNCServices      []VNCService      `gorm:"foreignKey:HostID" json:"vnc_services"`
-	// RDPServices      []RDPService      `gorm:"foreignKey:HostID" json:"rdp_services"`
-	// SPICEServices    []SPICEService    `gorm:"foreignKey:HostID" json:"spice_services"`
-	// PKCameraServices []PKCameraService `gorm:"foreignKey:HostID" json:"pkcamera_services"`
+	IP          string              `gorm:"uniqueIndex;not null" json:"ip"`
+	City        string              `json:"city"`
+	Region      string              `json:"region"`
+	CountryCode string              `json:"country_code"`
+	OS          string              `json:"os"`
+	Hardware    string              `json:"hardware"`
+	Labels      []string            `gorm:"serializer:json" json:"labels"`
+	Services    map[string][]string `gorm:"serializer:json" json:"services"` // Service name to list of ports
+	Software    []string            `gorm:"serializer:json" json:"software"`
+	PingMs      float64             `json:"ping_ms"`
+	IsFavorite  bool                `gorm:"default:false" json:"is_favorite"`
 }
-
-// func (h *Host) AddService(service Service) {
-// 	switch s := service.(type) {
-// 	case *VNCService:
-// 		h.VNCServices = append(h.VNCServices, *s)
-// 	case *RDPService:
-// 		h.RDPServices = append(h.RDPServices, *s)
-// 	case *SPICEService:
-// 		h.SPICEServices = append(h.SPICEServices, *s)
-// 	case *PKCameraService:
-// 		h.PKCameraServices = append(h.PKCameraServices, *s)
-// 	}
-// }
-
-// func (h *Host) GetAllServices() []any {
-// 	var services []any
-// 	for _, s := range h.VNCServices {
-// 		services = append(services, s)
-// 	}
-// 	for _, s := range h.RDPServices {
-// 		services = append(services, s)
-// 	}
-// 	for _, s := range h.SPICEServices {
-// 		services = append(services, s)
-// 	}
-// 	for _, s := range h.PKCameraServices {
-// 		services = append(services, s)
-// 	}
-// 	return services
-// }
 
 func parseLocationString(locationString string) (city, region, countryCode string) {
 	parts := strings.Split(locationString, ",")
@@ -73,6 +44,7 @@ func parseLocationString(locationString string) (city, region, countryCode strin
 	return city, region, countryCode
 }
 
+// NewHost creates a Host from scraped data, parsing the location string.
 func NewHost(ip, locationString, os, hardware string) *Host {
 	h := &Host{
 		IP:       ip,

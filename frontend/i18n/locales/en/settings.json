@@ -1,0 +1,151 @@
+{
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "appearance": "Appearance",
+    "language": "Language",
+    "theme": "Theme",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "variant": "Contrast",
+    "variants": {
+      "normal": "Normal",
+      "highContrast": "High Contrast"
+    },
+    "accent": "Accent Color",
+    "accentModes": {
+      "auto": "System",
+      "custom": "Custom"
+    },
+    "accentPickerTitle": "Choose Accent Color",
+    "memoryUnit": "Memory Unit",
+    "memoryUnits": {
+      "auto": "Auto"
+    },
+    "nav": {
+      "preferences": "Preferences",
+      "imap": "IMAP",
+      "scraper": "Scraper",
+      "accounts": "Accounts",
+      "dataExport": "Data Export",
+      "dataImport": "Data Import",
+      "scanner": "Scanner"
+    },
+    "comingSoon": "This feature is coming soon.",
+    "preferences": {
+      "title": "Preferences",
+      "closeToTray": "Close to Tray",
+      "closeToTrayDesc": "Minimize to the system tray instead of closing the application."
+    },
+    "imap": {
+      "title": "IMAP Configuration",
+      "description": "Configure the IMAP server used for receiving registration verification emails.",
+      "host": "Host",
+      "port": "Port",
+      "catchAllUsername": "Catch-all Username",
+      "catchAllPassword": "Catch-all Password",
+      "mbox": "Mailbox",
+      "useTls": "Use TLS",
+      "verify": "Verify Connection",
+      "verifying": "Verifying…",
+      "verifySuccess": "IMAP is configured and ready.",
+      "verifyFailed": "Connection test failed: {error}",
+      "notConfigured": "IMAP is not configured. Registration runs will be disabled.",
+      "errors": {
+        "host_not_configured": "IMAP host is not set.",
+        "port_invalid": "IMAP port is invalid.",
+        "credentials_not_configured": "Username or password is missing.",
+        "mailbox_not_configured": "Mailbox name is not set.",
+        "connection_failed": "Could not connect to the server.",
+        "connection_failed_try_tls": "Could not connect to the server. Try enabling TLS.",
+        "login_failed": "Authentication failed. Check your username and password.",
+        "login_failed_try_tls": "Authentication failed. The server likely requires TLS.",
+        "mailbox_not_found": "Mailbox not found. Check the mailbox name."
+      }
+    },
+    "scanner": {
+      "title": "Scanner Configuration",
+      "ping": "Ping",
+      "pingMode": "Ping Mode",
+      "pingModeDesc": "Soft skips hosts that don't respond to ping. Strict only scans hosts that respond.",
+      "pingModes": {
+        "soft": "Soft",
+        "strict": "Strict"
+      },
+      "icmpPing": "ICMP Ping",
+      "icmpPingDesc": "Use ICMP echo requests instead of TCP connect for ping. Requires elevated privileges on some systems.",
+      "workers": "Workers",
+      "maxWorkers": "Max Workers",
+      "maxWorkersDesc": "Maximum number of concurrent scan workers.",
+      "pingTimeout": "Ping Timeout",
+      "pingTimeoutDesc": "Seconds to wait for a ping response before marking the host as down.",
+      "connectTimeout": "Connect Timeout",
+      "connectTimeoutDesc": "Seconds to wait when establishing a TCP connection to a service port.",
+      "bannerTimeout": "Banner Timeout",
+      "bannerTimeoutDesc": "Seconds to wait for a service banner after the connection is established.",
+      "templates": "Protocol Commands",
+      "vncCommand": "VNC Command",
+      "vncCommandDesc": "Shell command to launch when connecting to a VNC service.",
+      "rdpCommand": "RDP Command",
+      "rdpCommandDesc": "Shell command to launch when connecting to an RDP service.",
+      "spiceCommand": "SPICE Command",
+      "spiceCommandDesc": "Shell command to launch when connecting to a SPICE service.",
+      "sshCommand": "SSH Command",
+      "sshCommandDesc": "Shell command to launch when connecting via SSH.",
+      "httpCommand": "HTTP Command",
+      "httpCommandDesc": "Shell command to launch when opening an HTTP service.",
+      "httpsCommand": "HTTPS Command",
+      "httpsCommandDesc": "Shell command to launch when opening an HTTPS service.",
+      "screenshotCommand": "Screenshot Command",
+      "screenshotCommandDesc": "Shell command to capture a VNC screenshot. Must write an image to the {'{'}{'{'}.OUTPUT{'}'}{'}'} path.",
+      "templatesHelp": {
+        "title": "Protocol Command Templates",
+        "body": "Configure the shell commands used to connect to each protocol. Use Go template syntax with double curly braces.\n\nAvailable variables:\n  {'{'}{'{'}.PROTOCOL{'}'}{'}'} - connection protocol (vnc, rdp, etc.)\n  {'{'}{'{'}.IP{'}'}{'}'} - host IP address\n  {'{'}{'{'}.PORT{'}'}{'}'} - service port number\n\nThe screenshot command also supports:\n  {'{'}{'{'}.OUTPUT{'}'}{'}'} - path to write the captured image to\n\nExamples:\n  remmina -c vnc://{'{'}{'{'}.IP{'}'}{'}'}:{'{'}{'{'}.PORT{'}'}{'}'}\n  xdg-open rdp://{'{'}{'{'}.IP{'}'}{'}'}:{'{'}{'{'}.PORT{'}'}{'}'}\n  remote-viewer spice://{'{'}{'{'}.IP{'}'}{'}'}:{'{'}{'{'}.PORT{'}'}{'}'}\n  ssh {'{'}{'{'}.IP{'}'}{'}'} -p {'{'}{'{'}.PORT{'}'}{'}'}\n  vncdotool -s {'{'}{'{'}.IP{'}'}{'}'}::{'{'}{'{'}.PORT{'}'}{'}'} capture {'{'}{'{'}.OUTPUT{'}'}{'}'}"
+      },
+      "screenshots": "Screenshots",
+      "screenshotMaxWorkers": "Screenshot Workers",
+      "screenshotMaxWorkersDesc": "Maximum number of concurrent screenshot captures during the post-scan phase.",
+      "screenshotTimeout": "Screenshot Timeout",
+      "screenshotTimeoutDesc": "Seconds to wait for a VNC screenshot capture before timing out.",
+      "screenshotDelay": "Screenshot Delay",
+      "screenshotDelayDesc": "Seconds between VNC protocol steps. Higher values improve reliability on slow connections.",
+      "screenshotPause": "Screenshot Pause",
+      "screenshotPauseDesc": "Seconds to wait after connecting before capturing the screenshot. Allows the framebuffer to fully render.",
+      "rejectBlankScreenshots": "Reject Blank Screenshots",
+      "rejectBlankScreenshotsDesc": "Discard VNC services that return a single-color or blank screen, or that cannot be reached for a screenshot."
+    },
+    "scraper": {
+      "browser": "Browser",
+      "browserBinaryPath": "Browser Binary Path",
+      "browserBinaryPathDesc": "Path to the Chromium-based browser executable.",
+      "virtualDisplay": "Virtual Display",
+      "virtualDisplayDesc": "Run the browser in a virtual display (Xvfb). Only available on Linux with Xvfb installed.",
+      "virtualDisplayUnavailable": "Virtual display is not available on this system.",
+      "agents": "Agents",
+      "maxAgents": "Max Agents",
+      "maxAgentsDesc": "Maximum number of concurrent scraper agents.",
+      "maxRegisterRetries": "Max Register Retries",
+      "maxRegisterRetriesDesc": "Maximum number of retries for account registration.",
+      "minimalBrowser": "Minimal Mode",
+      "minimalBrowserDesc": "Prevents some unnecessary resources from being fetched by the browser. May break certain site logic.",
+      "templates": "Templates",
+      "emailTemplate": "Email Template",
+      "passwordTemplate": "Password Template",
+      "organizationTemplate": "Organization Template",
+      "firstNameTemplate": "First Name Template",
+      "lastNameTemplate": "Last Name Template",
+      "templatesHelp": {
+        "title": "Template Variables",
+        "body": "Templates let you control how account details are generated during registration. Use Go template syntax with double curly braces, e.g. {'{'}{'{'}.VARIABLE_NAME{'}'}{'}'}.\n\nIdentifiers:\n  {'{'}{'{'}.ACCOUNT_ID{'}'}{'}'}  - unique numeric account identifier\n  {'{'}{'{'}.RANDOM_NONSENSE{'}'}{'}'}  - 8 random characters (at least 1 uppercase, 1 lowercase, 1 digit, 1 special)\n\nName fields:\n  {'{'}{'{'}.FIRST_NAME{'}'}{'}'},  {'{'}{'{'}.LAST_NAME{'}'}{'}'}  - randomly generated names\n  {'{'}{'{'}.LC_FIRST_NAME{'}'}{'}'},  {'{'}{'{'}.LC_LAST_NAME{'}'}{'}'}  - lowercase versions\n  {'{'}{'{'}.FULL_NAME{'}'}{'}'}  - first + last name\n  {'{'}{'{'}.LC_FULL_NAME{'}'}{'}'}  - lowercase full name\n\nFaker data:\n  {'{'}{'{'}.USERNAME{'}'}{'}'}  - lowercase first initial + last name + random number\n  {'{'}{'{'}.COMPANY{'}'}{'}'}  - random company name\n  {'{'}{'{'}.CITY{'}'}{'}'},  {'{'}{'{'}.COUNTRY{'}'}{'}'}  - random location\n  {'{'}{'{'}.JOB_TITLE{'}'}{'}'},  {'{'}{'{'}.BUZZWORD{'}'}{'}'}  - random job title / buzzword\n  {'{'}{'{'}.DOMAIN{'}'}{'}'}  - random domain name\n\nDigit helpers:\n  {'{'}{'{'}.DIGITS_1{'}'}{'}'}  through  {'{'}{'{'}.DIGITS_6{'}'}{'}'}  - zero-padded random numbers with 1-6 digits\n\nYou can combine multiple variables freely, for example:\n  {'{'}{'{'}.LC_FIRST_NAME{'}'}{'}'}. {'{'}{'{'}.LC_LAST_NAME{'}'}{'}'} {'{'}{'{'}.DIGITS_2{'}'}{'}'} {'@'}yourdomain.com"
+      },
+      "customQueries": "Custom Queries",
+      "customQueriesPlaceholder": "Enter one query per line…",
+      "customQueriesHelp": {
+        "title": "Custom Query Templates",
+        "body": "Add custom search queries to include in scraping runs. Enter one query per line.\n\nYou can use template placeholders that expand into multiple queries:\n\n  {'{'}{'{'} ALL_COUNTRIES {'}'}{'}'} - generates one query for every available country\n  {'{'}{'{'} CONTINENT:Name {'}'}{'}'} - generates one query for each country on the named continent\n\nAvailable continents:\n  Europe, Asia, North America, South America, Africa, Oceania, Middle East\n\nExample:\n  host.services.vnc.security_types.value:\"1\" and host.location.country:\"{'{'}{'{'} ALL_COUNTRIES {'}'}{'}'} \"\n\nThis single line would expand into ~97 queries, one per country.\n\n  host.services.rdp and host.location.country:\"{'{'}{'{'} CONTINENT:Europe {'}'}{'}'} \"\n\nThis would expand into one query per European country."
+      }
+    }
+  }
+}

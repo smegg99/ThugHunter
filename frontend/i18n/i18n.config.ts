@@ -1,3 +1,4 @@
+// i18n/i18n.config.ts
 export default defineI18nConfig(() => ({
   legacy: false,
   fallbackLocale: 'en',
@@ -6,8 +7,14 @@ export default defineI18nConfig(() => ({
   fallbackWarn: import.meta.dev,
 
   datetimeFormats: {
-    en: { short: { year: 'numeric', month: 'short', day: '2-digit' } },
-    pl: { short: { year: 'numeric', month: 'short', day: '2-digit' } },
+    en: {
+      short: { year: 'numeric', month: 'short', day: '2-digit' },
+      medium: { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
+    },
+    pl: {
+      short: { year: 'numeric', month: 'short', day: '2-digit' },
+      medium: { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' },
+    },
   },
   numberFormats: {
     en: { currency: { style: 'currency', currency: 'USD' } },

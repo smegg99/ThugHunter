@@ -1,0 +1,43 @@
+{
+  "accounts": {
+    "title": "Accounts",
+    "subtitle": "Registered scraper accounts and their credit status.",
+    "empty": "No accounts registered yet.",
+    "columns": {
+      "email": "Email",
+      "credits": "Credits",
+      "status": "Status",
+      "creditsExpire": "Credits Expire",
+      "refreshed": "Last Refreshed",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "expired": "Expired",
+      "noCredits": "No Credits"
+    },
+    "actions": {
+      "editPassword": "Edit Password",
+      "delete": "Delete"
+    },
+    "dialogs": {
+      "addTitle": "Add Account",
+      "editPasswordTitle": "Edit Password",
+      "deleteTitle": "Delete Account",
+      "deleteConfirm": "Are you sure you want to delete this account?",
+      "email": "Email",
+      "password": "Password",
+      "newPassword": "New Password",
+      "cancel": "Cancel",
+      "save": "Save",
+      "add": "Add",
+      "delete": "Delete",
+      "emailExists": "An account with this email already exists.",
+      "invalidEmail": "Please enter a valid email address."
+    },
+    "search": "Search accounts…",
+    "pagination": {
+      "rowsPerPage": "Per page"
+    }
+  }
+}

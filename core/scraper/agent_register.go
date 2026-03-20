@@ -2,6 +2,7 @@
 package scraper
 
 import (
+	"context"
 	"fmt"
 	"math/rand/v2"
 	"time"
@@ -9,74 +10,83 @@ import (
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
 
+	"github.com/smegg99/human"
 	"smegg.me/thughunter/common/config"
+	"smegg.me/thughunter/common/i18n"
 	"smegg.me/thughunter/common/logger"
 	"smegg.me/thughunter/core/catcher"
-	"smegg.me/thughunter/core/human"
 	"smegg.me/thughunter/core/models"
 	"smegg.me/thughunter/core/repositories"
 )
 
 const (
-	registerPageScanBaseMs     = 100
-	registerPageScanJitterMs   = 200
-	registerPostTermsBaseMs    = 100
-	registerPostTermsJitterMs  = 200
-	registerVerifyBtnTimeout   = 30 * time.Second
-	registerVerifyPageTimeout  = 30 * time.Second
-	registerOTPInputTimeout    = 10 * time.Second
-	registerContinueBtnTimeout = 10 * time.Second
-	registerCodeTimeout        = 2 * time.Minute
+	registerPageScanBaseMs     = 50
+	registerPageScanJitterMs   = 100
+	registerPostTermsBaseMs    = 50
+	registerPostTermsJitterMs  = 100
+	registerVerifyBtnTimeout   = 25 * time.Second
+	registerVerifyPageTimeout  = 25 * time.Second
+	registerOTPInputTimeout    = 15 * time.Second
+	registerContinueBtnTimeout = 15 * time.Second
+	registerCodeTimeout        = 15 * time.Minute
 )
 
-// Register creates a new account, fills the registration form, and verifies the email.
-func (a *ScraperAgent) Register() (*models.Account, error) {
+// Register creates a new account, fills the form, and verifies the email.
+func (a *ScraperAgent) Register(ctx context.Context) (*models.Account, error) {
 	logger.Info().Str("agent", a.Name).Msg("registering account")
 
-	return runTaskResult(a, func() (*models.Account, error) {
-		account, err := a.registerCreateAccount()
-		if err != nil {
-			return nil, err
-		}
+	a.SetStatusText(i18n.T("agent.creatingTempAccount"))
+	account, err := a.registerCreateTempAccount()
+	if err != nil {
+		return nil, err
+	}
 
-		mc, err := catcher.New()
-		if err != nil {
-			return nil, fmt.Errorf("register: start catcher: %w", err)
-		}
-		defer mc.Close()
+	mc, err := catcher.New()
+	if err != nil {
+		return nil, fmt.Errorf("register: start catcher: %w", err)
+	}
+	defer mc.Close()
 
-		codeCh := a.registerListenForCode(mc, account.Email)
+	codeCh := a.registerListenForCode(mc, account.Email)
 
-		page, cursor, err := a.registerOpenPage()
-		if err != nil {
-			return nil, err
-		}
+	a.SetStatusText(i18n.T("agent.openingRegistrationPage"))
+	page, cursor, err := a.registerOpenPage(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-		if err := a.registerFillForm(page, cursor, account); err != nil {
-			return nil, err
-		}
-		if err := a.registerAcceptTerms(page, cursor); err != nil {
-			return nil, err
-		}
-		if err := a.registerSubmit(page, cursor, account); err != nil {
-			return nil, err
-		}
-		if err := a.registerAwaitVerificationPage(page, account); err != nil {
-			return nil, err
-		}
-		if err := a.registerEnterCode(page, cursor, account, codeCh); err != nil {
-			return nil, err
-		}
+	a.SetStatusText(i18n.T("agent.fillingRegistrationForm"))
+	if err := a.registerFillForm(page, cursor, account); err != nil {
+		return nil, err
+	}
 
-		accounts := repositories.GetAccountRepository()
-		if err := accounts.Create(account); err != nil {
-			logger.Error().Err(err).Str("agent", a.Name).Str("email", account.Email).Msg("failed to save registered account to DB")
-			return nil, fmt.Errorf("register: save account: %w", err)
-		}
+	a.SetStatusText(i18n.T("agent.acceptingTerms"))
+	if err := a.registerAcceptTerms(ctx, page, cursor); err != nil {
+		return nil, err
+	}
 
-		logger.Info().Str("agent", a.Name).Str("email", account.Email).Msg("registered account saved to DB")
-		return account, nil
-	})
+	a.SetStatusText(i18n.T("agent.submittingRegistration"))
+	if err := a.registerSubmit(page, cursor, account); err != nil {
+		return nil, err
+	}
+
+	a.SetStatusText(i18n.T("agent.waitingForVerificationPage"))
+	if err := a.registerAwaitVerificationPage(page, account); err != nil {
+		return nil, err
+	}
+
+	a.SetStatusText(i18n.T("agent.waitingForVerificationCode"))
+	if err := a.registerEnterCode(ctx, page, cursor, account, codeCh); err != nil {
+		return nil, err
+	}
+
+	a.SetStatusText(i18n.T("agent.savingRegisteredAccount"))
+	if err := a.registerCreateAccount(account); err != nil {
+		return nil, err
+	}
+
+	logger.Info().Str("agent", a.Name).Str("email", account.Email).Msg("registered account saved to DB")
+	return account, nil
 }
 
 type registerCodeResult struct {
@@ -84,7 +94,18 @@ type registerCodeResult struct {
 	err  error
 }
 
-func (a *ScraperAgent) registerCreateAccount() (*models.Account, error) {
+// registerCreateAccount saves the newly registered account to the database.
+func (s *ScraperAgent) registerCreateAccount(account *models.Account) error {
+	accounts := repositories.GetAccountRepository()
+	if err := accounts.Create(account); err != nil {
+		logger.Error().Err(err).Str("agent", s.Name).Str("email", account.Email).Msg("failed to save registered account to DB")
+		return fmt.Errorf("register: save account: %w", err)
+	}
+	return nil
+}
+
+// registerCreateTempAccount creates a temporary account with random credentials.
+func (a *ScraperAgent) registerCreateTempAccount() (*models.Account, error) {
 	accountID := fmt.Sprintf("%s-%d", a.Name, time.Now().UnixMilli())
 	account, err := newAccountFromTemplates(accountID)
 	if err != nil {
@@ -93,6 +114,7 @@ func (a *ScraperAgent) registerCreateAccount() (*models.Account, error) {
 	return account, nil
 }
 
+// registerListenForCode starts a goroutine that waits for the verification code.
 func (a *ScraperAgent) registerListenForCode(mc *catcher.Catcher, email string) <-chan registerCodeResult {
 	ch := make(chan registerCodeResult, 1)
 	go func() {
@@ -102,15 +124,17 @@ func (a *ScraperAgent) registerListenForCode(mc *catcher.Catcher, email string) 
 	return ch
 }
 
-func (a *ScraperAgent) registerOpenPage() (*rod.Page, *human.Cursor, error) {
+// registerOpenPage opens the registration page.
+func (a *ScraperAgent) registerOpenPage(ctx context.Context) (*rod.Page, *human.Cursor, error) {
 	ep := config.Get().Scraper.Endpoints
-	page, cursor, err := a.openPageWithJitter(ep.RegisterEndpoint, registerPageScanBaseMs, registerPageScanJitterMs)
+	page, cursor, err := a.openPageWithJitter(ctx, ep.RegisterEndpoint, registerPageScanBaseMs, registerPageScanJitterMs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("register: %w", err)
 	}
 	return page, cursor, nil
 }
 
+// registerFillForm fills the registration form fields with the account data.
 func (a *ScraperAgent) registerFillForm(page *rod.Page, cursor *human.Cursor, account *models.Account) error {
 	return a.fillFormFields(page, cursor, "register", []formField{
 		{"#first_name", account.FirstName, "first name"},
@@ -122,7 +146,8 @@ func (a *ScraperAgent) registerFillForm(page *rod.Page, cursor *human.Cursor, ac
 	})
 }
 
-func (a *ScraperAgent) registerAcceptTerms(page *rod.Page, cursor *human.Cursor) error {
+// registerAcceptTerms ticks the terms checkbox and presses Tab.
+func (a *ScraperAgent) registerAcceptTerms(ctx context.Context, page *rod.Page, cursor *human.Cursor) error {
 	logger.Debug().Str("agent", a.Name).Msg("ticking terms checkbox")
 	termsEl, err := page.Element("#terms-and-conditions")
 	if err != nil {
@@ -131,11 +156,16 @@ func (a *ScraperAgent) registerAcceptTerms(page *rod.Page, cursor *human.Cursor)
 	if err := cursor.Click(termsEl); err != nil {
 		return fmt.Errorf("register: click terms checkbox: %w", err)
 	}
-	time.Sleep(time.Duration(registerPostTermsBaseMs+rand.IntN(registerPostTermsJitterMs)) * time.Millisecond)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(time.Duration(registerPostTermsBaseMs+rand.IntN(registerPostTermsJitterMs)) * time.Millisecond):
+	}
 	cursor.PressKey(input.Tab)
 	return nil
 }
 
+// registerSubmit clicks the "Verify Email" button.
 func (a *ScraperAgent) registerSubmit(page *rod.Page, cursor *human.Cursor, account *models.Account) error {
 	logger.Debug().Str("agent", a.Name).Msg("waiting for Verify Email button to become clickable")
 
@@ -161,6 +191,7 @@ func (a *ScraperAgent) registerSubmit(page *rod.Page, cursor *human.Cursor, acco
 	return nil
 }
 
+// registerAwaitVerificationPage waits for the email verification page to load.
 func (a *ScraperAgent) registerAwaitVerificationPage(page *rod.Page, account *models.Account) error {
 	logger.Debug().Str("agent", a.Name).Msg("waiting for email verification page to load")
 
@@ -189,10 +220,16 @@ func (a *ScraperAgent) registerAwaitVerificationPage(page *rod.Page, account *mo
 	return nil
 }
 
-func (a *ScraperAgent) registerEnterCode(page *rod.Page, cursor *human.Cursor, account *models.Account, codeCh <-chan registerCodeResult) error {
+// registerEnterCode enters and submits the verification code.
+func (a *ScraperAgent) registerEnterCode(ctx context.Context, page *rod.Page, cursor *human.Cursor, account *models.Account, codeCh <-chan registerCodeResult) error {
 	logger.Debug().Str("agent", a.Name).Msg("waiting for verification code from catcher")
 
-	cr := <-codeCh
+	var cr registerCodeResult
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case cr = <-codeCh:
+	}
 	if cr.err != nil {
 		return fmt.Errorf("register: %w: %w", ErrVerificationFailed, cr.err)
 	}

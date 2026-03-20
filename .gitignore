@@ -46,3 +46,4 @@ build/linux/appimage/build
 build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 thughunter
 config.json
+frontend/app/components/settings/ThemeVariantChangeButtonGroup copy.vue
