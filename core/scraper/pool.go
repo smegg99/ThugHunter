@@ -102,13 +102,6 @@ func (p *accountPool) usableCount() int {
 	return count
 }
 
-// assignSpecific assigns a particular account to the given agent.
-func (p *accountPool) assignSpecific(agentName string, accountID uint) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.assigned[accountID] = agentName
-}
-
 // release unassigns the agent's current account, returning it to the pool.
 func (p *accountPool) release(agentName string) {
 	p.mu.Lock()
@@ -121,13 +114,6 @@ func (p *accountPool) release(agentName string) {
 			return
 		}
 	}
-}
-
-// add inserts a newly created account into the pool.
-func (p *accountPool) add(account *models.Account) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.accounts[account.ID] = account
 }
 
 // totalCount returns the total number of accounts in the pool.

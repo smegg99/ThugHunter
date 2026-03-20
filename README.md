@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/thethughunter.svg" alt="ThugHunter" width="400">
+  <img src="assets/thethughunter.svg" alt="ThugHunter" width="640">
 </p>
 
 ThugHunter is a desktop application that aggregates various publicly accessible hosts from Censys. Currently focused on VNC, with support for additional protocols planned.
@@ -165,6 +165,61 @@ When the scraper registers new Censys accounts, it fills form fields using confi
 Commands for connecting to services and capturing screenshots are configurable under `scanner.templates`. These are resolved with `{{.IP}}` and `{{.PORT}}` at runtime.
 
 The screenshot command template has additional variables: `{{.TIMEOUT}}`, `{{.DELAY}}`, `{{.PAUSE}}` (from scanner worker config), and `{{.OUTPUT}}` (temp file path for the captured image).
+
+## Usage
+
+### 1. Add accounts
+
+Go to the settings page and add one or more Censys accounts. You can add them manually or let the scraper register new ones automatically (requires an IMAP catch-all mailbox for email verification). Some of them will not be usable instantly, they might take some time to become active, that is normal from what I've observed.
+
+### 2. Scrape hosts
+
+Start the scraper from the home page. Each agent picks up a Censys account, opens a browser session, and runs search queries. Discovered hosts are saved to the local database.
+
+### 3. Scan hosts
+
+Run the scanner to ping all collected hosts concurrently. Live hosts have their VNC services probed (RFB handshake, version detection, authentication check).
+
+### 4. Capture screenshots
+
+After scanning, the user can go to the VNC tab in the browse page to run another scan that will automatically attempt to capture a screenshot from every live VNC endpoint. It tries native RFB capture first, then falls back to the external tool (vncdo by default) if the native attempt fails or returns a blank image.
+
+## Screenshots
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" style="padding-bottom: 20px;">
+        <img src="assets/screenshots/screenshot_home_page.png" alt="Home Page" width="400"><br>
+        <em>Home page with scraper and scanner controls.</em>
+      </td>
+      <td align="center" style="padding-bottom: 20px;">
+        <img src="assets/screenshots/screenshot_hosts_page.png" alt="Hosts Page" width="400"><br>
+        <em>Hosts list with geolocation, latency, and service info.</em>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding-bottom: 20px;">
+        <img src="assets/screenshots/screenshot_vncs_page.png" alt="VNCs Page" width="400"><br>
+        <em>VNC endpoints with authentication status and captured screenshots.</em>
+      </td>
+      <td align="center" style="padding-bottom: 20px;">
+        <img src="assets/screenshots/screenshot_vnc_screenshotting.png" alt="VNC Screenshotting" width="400"><br>
+        <em>Screenshot capture in progress.</em>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="assets/screenshots/screenshot_accounts_page.png" alt="Accounts Page" width="400"><br>
+        <em>Accounts page for managing Censys credentials.</em>
+      </td>
+      <td align="center">
+        <img src="assets/screenshots/screenshot_settings_page.png" alt="Settings Page" width="400"><br>
+        <em>Settings page for scanner, scraper, and account configuration.</em>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ## Platforms
 
